@@ -126,11 +126,11 @@ void help(){
 
 //original main uses args: int argc, char * argv[]
 //wmain uses args: int argc, wchar_t *argv[ ], wchar_t *envp[ ]
-int wmain(int argc, wchar_t *argv[ ], wchar_t *envp[ ]){
-  std::wifstream infile(argv[1]);
+int main(int argc, char * argv[]){
+  /*std::wifstream infile(argv[1]);
   std::cout << "File is Open?: " << infile.is_open() << "\n";
   std::wcout << argv[1];
-  infile.close();
+  infile.close();*/
   // Read and check command line parameters.
   //std::cout << argc << ", " << strcmp(argv[1], "help") << "\n";
   
