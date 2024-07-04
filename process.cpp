@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include "include/addon.h"
+//#include "include/addon.h"
 //#include "include/bass.h"
 #include <string>
 #include <regex>
@@ -9,7 +9,7 @@
 #include <windows.h>
 #include <unistd.h>
 #include "include/options.h"
-#include "include/controls.h";
+#include "include/controls.h"
 
 //original main uses args: int argc, char * argv[]
 //wmain uses args: int argc, wchar_t *argv[ ], wchar_t *envp[ ]

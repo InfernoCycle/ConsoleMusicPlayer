@@ -1,14 +1,17 @@
-#define addon
-#pragma once
-#ifdef addon
+#define INFERNO_H
+#ifdef INFERNO_H
+
 #include <codecvt>
 #include <locale>
 #include <iostream>
 #include "addon.h"
 #include "bass.h"
-#include "options.h"
+//#include "options.h"
 #include <fstream>
 #include <unistd.h>
+#include <thread>
+#include <mutex>
+#include "listener.h"
 
 namespace pincer{
   class control{
@@ -106,6 +109,7 @@ namespace pincer{
         }
         return -1;
       }
+
       void showInputs(){
 
       }
@@ -137,14 +141,25 @@ namespace pincer{
         if(BASS_ErrorGetCode() != 0){
           return false;
         }
+        Listener listen;
+
+        //std::thread t1(&Listener::running, listen, std::move(123));
+        //t1.detach();
+
+        //this->t1.join(); call this if you want blocking
+
         return true;
+      }
+
+      void foo(int num){
+        std::cout << num << "\n";
       }
 
       void restart(HCHANNEL channel){
         BASS_ChannelSetPosition(channel, BASS_ChannelSeconds2Bytes(channel, 0), BASS_POS_BYTE);
       }
 
-      void forward(HCHANNEL channel){
+      void forward(HCHANNEL channel, int changeAmount = 5){
         const float cur_pos = BASS_ChannelGetPosition(channel, BASS_POS_BYTE);
         const float playback_length_bytes = BASS_ChannelGetLength(channel, BASS_POS_BYTE);
         //float playback_length_seconds = BASS_ChannelBytes2Seconds(channel, playback_length_bytes);
@@ -166,14 +181,14 @@ namespace pincer{
         BASS_ChannelSetPosition(channel, BASS_ChannelSeconds2Bytes(channel, cur_pos_seconds+5), BASS_POS_BYTE);
       }
 
-      void back(HCHANNEL channel){
+      void back(HCHANNEL channel, int changeAmount = 5){
         const float cur_pos = BASS_ChannelGetPosition(channel, BASS_POS_BYTE);
         const float playback_length_bytes = BASS_ChannelGetLength(channel, BASS_POS_BYTE);
         const float bytes_pos_ratio = cur_pos/playback_length_bytes;
         float cur_pos_bytes = bytes_pos_ratio*playback_length_bytes;
 
         float cur_pos_seconds = BASS_ChannelBytes2Seconds(channel, cur_pos_bytes);
-        BASS_ChannelSetPosition(channel, BASS_ChannelSeconds2Bytes(channel, cur_pos-5), BASS_POS_BYTE);
+        BASS_ChannelSetPosition(channel, BASS_ChannelSeconds2Bytes(channel, cur_pos_seconds-5), BASS_POS_BYTE);
       }
 
       void playSong(HCHANNEL channel){

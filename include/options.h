@@ -1,6 +1,5 @@
-#define addon
-#pragma once
-#ifdef addon
+#define INFERNO_H
+#ifdef INFERNO_H
 #include <codecvt>
 #include <locale>
 #include <iostream>
