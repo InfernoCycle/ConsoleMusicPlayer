@@ -7,10 +7,14 @@
 class Node{
     public:
     char val;
+    wchar_t wval;
     Node *next = NULL;
 
     Node(char val){
         this->val = val;
+    }
+    Node(wchar_t val){
+        this->wval = val;
     }
 };
 
@@ -42,11 +46,39 @@ public:
         this->size++;
     }
 
+    void w_add(wchar_t value){
+        Node *newVal = new Node(value);
+
+        if(this->head == NULL){
+            this->head = newVal;
+            this->size++;
+            return;
+        }
+
+        Node *cur = this->head;
+        while(cur->next != NULL){
+            cur = cur->next;
+        }
+
+        cur->next = newVal;
+        this->size++;
+    }
+
     std::string to_string(){
         std::string temp = "";
         Node *cur = this->head;
         while(cur != NULL){
             temp+=cur->val;
+            cur = cur->next;
+        }
+        return temp;
+    }
+
+    std::wstring w_to_string(){
+        std::wstring temp = L"";
+        Node *cur = this->head;
+        while(cur != NULL){
+            temp+=cur->wval;
             cur = cur->next;
         }
         return temp;
@@ -93,6 +125,51 @@ public:
         return all;
     }
 
+    std::wstring* w_split(std::wstring str, wchar_t delimiter, const int length, const int limit=2){
+        std::wstring *all = new std::wstring[limit+1];
+        LinkedList *left = new LinkedList();
+ 
+        int count = 0;
+
+        for(int i = 0; i < length; i++){
+            if((str)[i] == delimiter && count < limit){
+                all[count] = left->w_to_string();
+                left->clear();
+                count++;
+                continue;
+            }
+
+            left->w_add((str)[i]);
+            
+            if(i == length-1){
+                all[count] = left->w_to_string();
+                left->clear();
+            }
+        }
+        left->clear();
+        delete left;
+        return all;
+    }
+
+    bool wstrcmp(std::wstring in, std::wstring in2){
+        std::wstring strip_in = this->w_strip(in, in.size());
+        std::wstring strip_in2 = this->w_strip(in2, in.size());
+        std::string stuff = "e";
+        
+        if(strip_in.size() != strip_in2.size()){
+            return false;
+        }
+
+        for(int i = 0; i < strip_in.size(); i++){
+            if(strip_in[i] == strip_in2[i]){
+                continue;
+            }else{
+                return false;
+            }
+        }
+        return true;
+    }
+
     int length_wchar(wchar_t *val){
         int count = 0;
         while(true){
@@ -106,6 +183,10 @@ public:
 
     void println(std::string val){
         std::cout << val << "\n";
+    }
+
+    void wprintln(std::wstring val){
+        std::wcout << val << L"\n";
     }
 
     std::string strip(std::string str, int length){
@@ -145,6 +226,45 @@ public:
         }
         //std::cout << list->length() << "\n";
         return list->to_string();
+    }
+
+    std::wstring w_strip(std::wstring str, int length){
+        wchar_t cur;
+        wchar_t prev;
+        bool char_found = false;
+        bool is_space = false;
+        short count = 0;
+
+        LinkedList * list = new LinkedList();
+
+        for(int i = 0; i < length; i++){
+            if((str)[i] != L' '){
+                char_found = true;
+            }
+
+            if(char_found){
+                cur = (str)[i];
+
+                if(cur == L' '){
+                    is_space = true;
+                    continue;
+                }
+                if(cur != L' '){
+                    if(is_space){
+                        list->w_add(L' ');
+                        count+=1;
+                    }
+                    is_space = false;
+                    list->w_add((str)[i]);
+                    (str)[count] = (str)[i];
+                    (str)[i] = L' ';
+                    count+=1;
+                    continue;
+                }
+            }
+        }
+        //std::cout << list->length() << "\n";
+        return list->w_to_string();
     }
 
     std::string remove_char(std::string *str, char val, int length){

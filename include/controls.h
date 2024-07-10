@@ -25,6 +25,7 @@ namespace pincer{
       std::string dest_file = "";
       float original_volume;
 
+    
     public:
       void helper(){
         std::cout << 
@@ -43,8 +44,8 @@ namespace pincer{
         "length = shows the length of the song.\n"; 
       }
 
-      void load(char* filename, HCHANNEL *channel, float *origin_vol){
-        std::cout << filename << "\n";
+      void load(wchar_t* filename, HCHANNEL *channel, float *origin_vol){
+        //std::wcout << filename << "\n";
         if(this->loaded){
           return;
         }else{
@@ -62,9 +63,9 @@ namespace pincer{
         return this->loaded;
       }
 
-      void length(HCHANNEL channel, std::string type="secs"){
+      void length(HCHANNEL channel, std::wstring type=L"secs"){
         if(this->loaded){
-          if(type == "mins"){
+          if(type == L"mins"){
             const float playback_length_bytes = BASS_ChannelGetLength(channel, BASS_POS_BYTE);
             const float mins = BASS_ChannelBytes2Seconds(channel, playback_length_bytes) / 60;
             std::cout << "Length: " << mins << " Minutes\n";
@@ -75,17 +76,17 @@ namespace pincer{
         }
       }
 
-      void copy_file_to(std::string src, std::string dest){
+      void copy_file_to(std::wstring src, std::wstring dest){
         if(src != dest){
-          std::ifstream infile(src);
+          std::wifstream infile(src.c_str());
 
-          std::ofstream outfile(dest);
+          std::wofstream outfile(dest.c_str());
 
-          std::string data;
+          std::wstring data;
 
           while(std::getline(infile, data)){
             outfile << data;
-            std::cout << data << "\n";
+            std::wcout << data << "\n";
             outfile.flush();
           }
 
@@ -114,14 +115,20 @@ namespace pincer{
 
       }
 
-      bool startSong(int output_device=-1, float volume=0.2f, int sample_rate=44000, int offset=0, int start_pos=0, char *filename=NULL, float *original_vol=NULL, HCHANNEL *channel=NULL, bool play_on_start=true){
+      bool startSong(int output_device=-1, float volume=0.2f, int sample_rate=44000, int offset=0, int start_pos=0, wchar_t *filename=NULL, float *original_vol=NULL, HCHANNEL *channel=NULL, bool play_on_start=true){
         HSAMPLE hm;
-        //std::cout<< "filename: " << filename << "\n";
+        std::wcout<< L"filename: " << filename << L"\n";
+        /*std::wstring shorten = filename;
+        std::string s(shorten.begin(), shorten.end());
+        std::cout << s << "\n";*/
+        std::wifstream st(filename);
+        std::cout << "is Open: " << st.is_open() << "\n";
+        st.close();
         //HSTREAM stream = BASS_StreamCreateFile(FALSE, "SUI UZI - Imperfect.mp3.mp3", 0, 0, BASS_SAMPLE_MONO);
-        BASS_Init(output_device, sample_rate, 0, 0, NULL);
+        BASS_Init(output_device, sample_rate, BASS_SAMPLE_MONO, 0, NULL);
         *original_vol = BASS_GetVolume();
         hm = BASS_SampleLoad(FALSE, filename, offset, 0, BASS_SAMPLE_LOOP, BASS_SAMPLE_MONO);
-        std::cout << "Error Code: " << BASS_ErrorGetCode() << "\n";
+        std::cout << "\nError Code: " << BASS_ErrorGetCode() << "\n";
         if(BASS_ErrorGetCode() != 0){
           this->loaded = false;
           return false;
@@ -156,7 +163,11 @@ namespace pincer{
       }
 
       void restart(HCHANNEL channel){
-        BASS_ChannelSetPosition(channel, BASS_ChannelSeconds2Bytes(channel, 0), BASS_POS_BYTE);
+        /*if(this->loaded && BASS_ACTIVE_STOPPED == BASS_ChannelIsActive(channel)){
+          BASS_ChannelPlay(channel, true);
+        }*/
+        BASS_ChannelPlay(channel, true);
+        //BASS_ChannelSetPosition(channel, BASS_ChannelSeconds2Bytes(channel, 0), BASS_POS_BYTE);
       }
 
       void forward(HCHANNEL channel, int changeAmount = 5){
@@ -205,6 +216,40 @@ namespace pincer{
         }
 
         BASS_SetVolume(volume/100);
+      }
+
+      float change_position(HCHANNEL channel, int pos){
+        float cur_pos_bytes = BASS_ChannelGetPosition(channel, BASS_POS_BYTE);
+        float cur_pos = BASS_ChannelBytes2Seconds(channel, cur_pos_bytes);
+        return cur_pos;
+      }
+
+      void position(HCHANNEL channel){
+        float cur_pos_bytes = BASS_ChannelGetPosition(channel, BASS_POS_BYTE);
+        float cur_pos_seconds = BASS_ChannelBytes2Seconds(channel, cur_pos_bytes);
+
+        int minutes = (static_cast<int>(cur_pos_seconds)/60);
+        int seconds = static_cast<int>(cur_pos_seconds) % 60;
+        
+        float length_bytes = BASS_ChannelGetLength(channel, BASS_POS_BYTE);
+        float length_seconds = BASS_ChannelBytes2Seconds(channel, length_bytes);
+
+        int minutes_full = (static_cast<int>(length_seconds)/60);
+        int seconds_full = static_cast<int>(length_seconds) % 60;
+
+        if(std::to_string(seconds).length() > 1){
+          if(std::to_string(seconds_full).length() > 1){
+            std::cout << "Time: " << minutes << ":" << seconds << " / " << minutes_full << ":" << seconds_full << "\n";
+          }else{
+            std::cout << "Time: " << minutes << ":" << seconds << " / " << minutes_full << ":0" << seconds_full << "\n";
+          }
+        }else{
+          if(std::to_string(seconds_full).length() > 1){
+            std::cout << "Time: " << minutes << ":0" << seconds << " / " << minutes_full << ":" << seconds_full << "\n";
+          }else{
+            std::cout << "Time: " << minutes << ":0" << seconds << " / " << minutes_full << ":0" << seconds_full << "\n";
+          }
+        }
       }
 
       void stopSong(float original_volume){
