@@ -12,6 +12,10 @@
 #include <thread>
 #include <mutex>
 #include "listener.h"
+#include <sstream>
+#include "nlohmann/json.hpp"
+
+using json = nlohmann::json;
 
 namespace pincer{
   class control{
@@ -25,7 +29,85 @@ namespace pincer{
       std::string dest_file = "";
       float original_volume;
 
-    
+      void read_write_playlist(std::wstring playlist_name, std::wstring file){
+        std::ifstream ifile;
+        std::ofstream ofile;
+        
+        std::wcout << file << L"\n";
+
+        static std::wstring_convert< std::codecvt_utf8<wchar_t>, wchar_t > converter;
+        std::string playlist = converter.to_bytes(playlist_name);
+        std::string added_file = converter.to_bytes(file);
+
+        ifile.open("./playlist.json");
+        std::string data = "";
+
+        json j;
+        ifile >> j;
+
+        //std::cout << j[playlist] << "\n";
+        
+        if(playlist.size() > 0){
+          if(j[playlist] == j["null"]){
+            std::cout << "nothing happened cause it doesn't exist\n";
+            if(added_file.size() > 0){
+              std::ifstream test1(added_file);
+              if(test1.is_open()){
+                j[playlist] = {added_file};
+                std::cout << "Added the Playlist '" << playlist << "', and the file '" << added_file << "'\n";
+                ofile.open("./playlist.json");
+                ofile << j;
+              }else{
+                std::cout << "Cannot add a file that does not exist.\n";
+              }
+              test1.close();
+            }else{
+              std::cout << "No File was entered for this playlist\n";
+            }
+            
+          }else{
+            std::cout << "hold up, wait a minute, something ain't right \n";
+            
+            if(added_file.size() > 0){
+              //check if file already in list
+
+              for(auto it = j[playlist].begin(); it < j[playlist].end(); it++){
+                std::cout << *it << "\n";
+                if(*it == added_file){
+                  std::cout << "That file is already in this playlist\n";
+                  return;
+                }
+              }
+
+              //add file to playlist
+              j[playlist].insert(j[playlist].end(), added_file);
+              std::cout << "Added the file '" << added_file << "' to the playlist '" << playlist << "'\n";
+
+              std::ifstream test1(added_file);
+              if(test1.is_open()){
+                j[playlist] = {added_file};
+                ofile.open("./playlist.json");
+                ofile << j;
+              }else{
+                std::cout << "Cannot add a file that does not exist.\n";
+              }
+              test1.close();
+            }else{
+              std::cout << "No File was entered for this playlist\n";
+            }
+          }
+        }else{
+          std::cout << "A playlist was not chosen.\n";
+        }
+        
+        //j[playlist_name] = file;
+
+        std::cout << std::setw(2) << j << "\n";
+
+        ifile.close();
+        ofile.close();
+      }
+
     public:
       void helper(){
         std::cout << 
@@ -45,7 +127,7 @@ namespace pincer{
       }
 
       void load(wchar_t* filename, HCHANNEL *channel, float *origin_vol){
-        //std::wcout << filename << "\n";
+        std::wcout << L"Filename Before StartSong: " << filename << L"\n";
         if(this->loaded){
           return;
         }else{
@@ -262,6 +344,22 @@ namespace pincer{
 
       void help(){
         std::cout<<"Arguments:\n-o <number> = output device\n-v <number> = volume from 0 to 1\n-s <number> = sample rate\n-off <number> = offset\n--outputs = show all available output devices\n--start <seconds> = position to start at in a file.\n-cp <destination_file>\n--help = show all available arguments";
+      }
+
+      void create_write_json(std::wstring playlist_name, std::wstring file){
+        std::ifstream ifile;
+        std::ofstream ofile;
+
+        ifile.open("./playlist.json");
+        if(!ifile.is_open()){
+          ofile.open("./playlist.json");
+          ofile << "{}";
+        }
+
+        ifile.close();
+        ofile.close();
+
+        this->read_write_playlist(playlist_name, file);
       }
   };
 };

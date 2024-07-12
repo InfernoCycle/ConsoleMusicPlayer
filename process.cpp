@@ -12,10 +12,13 @@
 #include "include/controls.h"
 //#include "include/Create.h"
 
+
 //original main uses args: int argc, char * argv[]
 //wmain uses args: int argc, wchar_t *argv[ ], wchar_t *envp[ ]
 int main(int argc, char * argv[]){
   StringMan * build;
+
+  //std::setlocale(LC_ALL, "ja_JP.utf8");
 
   LPWSTR *args = CommandLineToArgvW(GetCommandLineW(), &argc);
   
@@ -32,7 +35,7 @@ int main(int argc, char * argv[]){
   /*std::ifstream infile(argv[1]);
   std::cout<< "File Exist: " << infile.is_open() << "\n";
   infile.close();*/
-  
+
   if(argc > 1){
     if(build->wstrcmp(args[1], L"--help") == 1 || build->wstrcmp(args[1], L"help") == 1 || build->wstrcmp(args[1], L"-h") == 1 || build->wstrcmp(args[1], L"-help") == 1){
       controls->help();
@@ -65,13 +68,13 @@ int main(int argc, char * argv[]){
   
   if(argc > 1){
     for(int i = 1; i < argc; i++){
-      if(build->wstrcmp(args[1], L"-cp") == 1){
+      if(build->wstrcmp(args[i], L"-cp") == 1){
         try{
           dest_file = args[i+1];
           copy_enabled = true;
           continue;
-        }catch(std::invalid_argument){
-          std::cout << "Error: Invalid path";
+        }catch(...){
+          std::cout << "Error: Invalid path, could not copy file.";
           break;
         }
         continue;
@@ -82,6 +85,7 @@ int main(int argc, char * argv[]){
           continue;
         }
         has_run = true;
+        
         filename = args[i];
         std::cout << filename << "\n";
         /*std::cout << "Filename: " << filename << "\n";
@@ -93,17 +97,17 @@ int main(int argc, char * argv[]){
         std::cout << match_str << "\n";*/
         /*UNCOMMENT HERE*/has_file = true;
       }
-      if(build->wstrcmp(args[1], L"-o") == 1){
+      if(build->wstrcmp(args[i], L"-o") == 1){
         //std::cout << "out put value is out?: " << argv[i+1] << "\n";
         try{
           output_device = std::stoi(args[i+1])-1;
-        }catch(std::invalid_argument){
-          std::cout << "Error: Please type an integer. Here are a list of outputs available on this device: \n";
-          controls->showOutputs();
+        }catch(...){
+          std::cout << "Invalid value, using the default output device of -1.\n";
+          //controls->showOutputs();
         }
       }
 
-      if(build->wstrcmp(args[1], L"-v") == 1){
+      if(build->wstrcmp(args[i], L"-v") == 1){
         //std::cout << "volume value is out? " << argv[i] << "\n";
         try{
           float levels = std::stof(args[i+1]);
@@ -111,34 +115,35 @@ int main(int argc, char * argv[]){
             levels = 1.0f;
           }
           volume = levels;
-        }catch(std::invalid_argument){
-          std::cout << "Error: Please type a number from 0 to 1";
+        }catch(...){
+          std::cout << "Invalid value, using the default of 0.2.\n";
         }
       }
 
-      if(build->wstrcmp(args[1], L"-s") == 1){
+      if(build->wstrcmp(args[i], L"-s") == 1){
         try{
           sample_rate = std::stoi(args[i+1]);
-        }catch(std::invalid_argument){
-          std::cout << "Please type a sample rate number";
+        }catch(...){
+          std::cout << "Invalid Sample Rate, using the default value of 44100.\n";
         }
       }
       
-      if(build->wstrcmp(args[1], L"-off") == 1){
+      if(build->wstrcmp(args[i], L"-off") == 1){
         //std::cout << "offset value is out? " << argv[i] << "\n";
         try{
           offset = std::stoi(args[i+1]);
-        }catch(std::invalid_argument){
-          std::cout << "Please type an offset number.";
+        }catch(...){
+          std::cout << "Offset was invalid using the default value of 0.\n";
         }
       }
 
-      if(build->wstrcmp(args[1], L"--start") == 1){
+      if(build->wstrcmp(args[i], L"--start") == 1){
         //std::cout << "offset value is out? " << argv[i] << "\n";
         try{
           start_pos = std::stoi(args[i+1]);
-        }catch(std::invalid_argument){
-          std::cout << "Please type a start number in seconds.";
+        }catch(...){
+          start_pos = 0;
+          std::cout << "Invalid Value. File will begin from the beginning.\n";
         }
       }
     }
@@ -239,15 +244,19 @@ int main(int argc, char * argv[]){
       }
       if(split_str[1] != L""){
         const int filename_length = split_str[1].size();
-        //std::wcout << split_str[1] + L" Canon Event" << "\n";
+        std::cout << "File Size: " << filename_length << "\n";
+        std::wcout << L"Filename Before Load: " << split_str[1] << L"\n";
+        std::wcout << split_str[1] + L" Canon Event" << "\n";
         
         wchar_t *newFile = new wchar_t[filename_length];
 
-        for(int k = 0; k < filename_length; k++){
+        for(int k = 0; k < filename_length; k++){ //problem here
           newFile[k] = split_str[1][k];
+          //std::wcout << k << ". " << split_str[1][k] << L"\n";
         }
 
         controls->load(newFile, &channel, &original_volume);
+        delete [] newFile;
       }else{build->println("No file was entered.");}
     }
     if(split_str[0] == L"unload"){
@@ -272,6 +281,18 @@ int main(int argc, char * argv[]){
       }else{
         controls->length(channel);
       }
+    }
+    if(split_str[0] == L"add"){
+      try{
+        std::wstring * addition = build->w_split(stripped_str, ' ', stripped_str.size(), 2);
+        controls->create_write_json(addition[1], addition[2]);
+        //return -1;
+      }catch(...){
+        std::cout<<"The format for add is 'add <playlist_name> <file_name>'\n";
+      }
+    }
+    if(split_str[0] == L"playlists"){
+      std::cout << "Coming Soon";
     }
     if(command == L"help"){
       controls->helper();

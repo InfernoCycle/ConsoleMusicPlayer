@@ -153,8 +153,7 @@ public:
 
     bool wstrcmp(std::wstring in, std::wstring in2){
         std::wstring strip_in = this->w_strip(in, in.size());
-        std::wstring strip_in2 = this->w_strip(in2, in.size());
-        std::string stuff = "e";
+        std::wstring strip_in2 = this->w_strip(in2, in2.size());
         
         if(strip_in.size() != strip_in2.size()){
             return false;
