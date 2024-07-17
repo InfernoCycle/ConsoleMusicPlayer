@@ -3,6 +3,8 @@
 #include <codecvt>
 #include <locale>
 #include <iostream>
+#include <string>
+#include <unistd.h>
 
 class Node{
     public:
@@ -121,7 +123,7 @@ public:
             }
         }
         left->clear();
-        delete left;
+        delete [] left;
         return all;
     }
 
@@ -161,6 +163,21 @@ public:
 
         for(int i = 0; i < strip_in.size(); i++){
             if(strip_in[i] == strip_in2[i]){
+                continue;
+            }else{
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool strcmp(std::string in, std::string in2){
+        if(in.size() != in2.size()){
+            return false;
+        }
+
+        for(int i = 0; i < in.size(); i++){
+            if(in[i] == in2[i]){
                 continue;
             }else{
                 return false;
@@ -279,26 +296,43 @@ public:
 
     std::string wstrtostr(const std::wstring &wstr)
     {
-        // Convert a Unicode string to an ASCII string
-        std::string strTo;
-        char *szTo = new char[wstr.length() + 1];
-        szTo[wstr.size()] = '\0';
-        WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), -1, szTo, (int)wstr.length(), NULL, NULL);
-        strTo = szTo;
-        delete[] szTo;
-        return strTo;
+        // Convert a utf-16 to utf-8. all characters on windows are utf-16
+        std::u16string u16str(wstr.begin(), wstr.end());
+        std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert; 
+        std::string utf8 = convert.to_bytes(u16str);
+        return utf8;
     }
 
-    std::wstring strtowstr(const std::string &str)
+    std::wstring strtowstr(const std::string str)
     {
         // Convert an ASCII string to a Unicode String
-        std::wstring wstrTo;
-        wchar_t *wszTo = new wchar_t[str.length() + 1];
-        wszTo[str.size()] = L'\0';
-        MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, wszTo, (int)str.length());
-        wstrTo = wszTo;
-        delete[] wszTo;
-        return wstrTo;
+        std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> convert; 
+        std::wstring utf8 = convert.from_bytes(str);
+        //std::wstring wstr(utf16.begin(), utf16.end());
+        return utf8;
+    }
+};
+
+class Convertors{
+public:
+    std::string u32_to_str(const std::u32string str){
+        std::wstring_convert<std::codecvt_utf8_utf16<char32_t>, char32_t> converter;
+        return converter.to_bytes(str);
+    }
+    
+    std::u32string str_to_u32(const std::string str){
+        std::wstring_convert<std::codecvt_utf8_utf16<char32_t>, char32_t> converter;
+        return converter.from_bytes(str);
+    }
+
+    std::string u16_to_str(const std::u16string str){
+        std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
+        return converter.to_bytes(str);
+    }
+    
+    std::u16string str_to_u16(const std::string str){
+        std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
+        return converter.from_bytes(str);
     }
 };
 

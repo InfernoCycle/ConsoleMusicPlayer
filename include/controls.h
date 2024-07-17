@@ -29,15 +29,15 @@ namespace pincer{
       std::string dest_file = "";
       float original_volume;
 
-      void read_write_playlist(std::wstring playlist_name, std::wstring file){
+      void read_write_playlist(std::string playlist_name, std::string file){
         std::ifstream ifile;
         std::ofstream ofile;
         
-        std::wcout << file << L"\n";
+        std::cout << file << "\n";
 
-        static std::wstring_convert< std::codecvt_utf8<wchar_t>, wchar_t > converter;
+        /*static std::wstring_convert< std::codecvt_utf8<wchar_t>, wchar_t > converter;
         std::string playlist = converter.to_bytes(playlist_name);
-        std::string added_file = converter.to_bytes(file);
+        std::string added_file = converter.to_bytes(file);*/
 
         ifile.open("./playlist.json");
         std::string data = "";
@@ -47,14 +47,14 @@ namespace pincer{
 
         //std::cout << j[playlist] << "\n";
         
-        if(playlist.size() > 0){
-          if(j[playlist] == j["null"]){
+        if(playlist_name.size() > 0){
+          if(j[playlist_name] == j["null"]){
             std::cout << "nothing happened cause it doesn't exist\n";
-            if(added_file.size() > 0){
-              std::ifstream test1(added_file);
+            if(file.size() > 0){
+              std::wifstream test1(file.c_str());
               if(test1.is_open()){
-                j[playlist] = {added_file};
-                std::cout << "Added the Playlist '" << playlist << "', and the file '" << added_file << "'\n";
+                j[playlist_name] = {file};
+                std::cout << "Added the Playlist '" << playlist_name << "', and the file '" << file << "'\n";
                 ofile.open("./playlist.json");
                 ofile << j;
               }else{
@@ -65,29 +65,30 @@ namespace pincer{
               std::cout << "No File was entered for this playlist\n";
             }
             
-          }else{
+          }
+          else{
             std::cout << "hold up, wait a minute, something ain't right \n";
             
-            if(added_file.size() > 0){
+            if(file.size() > 0){
               //check if file already in list
-
-              for(auto it = j[playlist].begin(); it < j[playlist].end(); it++){
+              for(auto it = j[playlist_name].begin(); it < j[playlist_name].end(); it++){
                 std::cout << *it << "\n";
-                if(*it == added_file){
+                if(*it == file){
                   std::cout << "That file is already in this playlist\n";
                   return;
                 }
               }
 
               //add file to playlist
-              j[playlist].insert(j[playlist].end(), added_file);
-              std::cout << "Added the file '" << added_file << "' to the playlist '" << playlist << "'\n";
-
-              std::ifstream test1(added_file);
+              //D:\Downloads\Masayoshi Oishi - Super Adorable Gal ｜ OPテーマ「Hokkaido Gals Are Super Adorable!」.mp3.mp3
+              std::ifstream test1(file);
               if(test1.is_open()){
-                j[playlist] = {added_file};
+                j[playlist_name] = {file};
                 ofile.open("./playlist.json");
                 ofile << j;
+
+                j[playlist_name].insert(j[playlist_name].end(), file);
+                std::cout << "Added the file '" << file << "' to the playlist '" << playlist_name << "'\n";
               }else{
                 std::cout << "Cannot add a file that does not exist.\n";
               }
@@ -96,7 +97,8 @@ namespace pincer{
               std::cout << "No File was entered for this playlist\n";
             }
           }
-        }else{
+        }
+        else{
           std::cout << "A playlist was not chosen.\n";
         }
         
@@ -126,8 +128,8 @@ namespace pincer{
         "length = shows the length of the song.\n"; 
       }
 
-      void load(wchar_t* filename, HCHANNEL *channel, float *origin_vol){
-        std::wcout << L"Filename Before StartSong: " << filename << L"\n";
+      void load(char* filename, HCHANNEL *channel, float *origin_vol){
+        std::cout << "Filename Before StartSong: " << filename << L"\n";
         if(this->loaded){
           return;
         }else{
@@ -145,9 +147,9 @@ namespace pincer{
         return this->loaded;
       }
 
-      void length(HCHANNEL channel, std::wstring type=L"secs"){
+      void length(HCHANNEL channel, std::string type="secs"){
         if(this->loaded){
-          if(type == L"mins"){
+          if(type == "mins"){
             const float playback_length_bytes = BASS_ChannelGetLength(channel, BASS_POS_BYTE);
             const float mins = BASS_ChannelBytes2Seconds(channel, playback_length_bytes) / 60;
             std::cout << "Length: " << mins << " Minutes\n";
@@ -158,17 +160,17 @@ namespace pincer{
         }
       }
 
-      void copy_file_to(std::wstring src, std::wstring dest){
+      void copy_file_to(std::string src, std::string dest){
         if(src != dest){
-          std::wifstream infile(src.c_str());
+          std::ifstream infile(src.c_str());
 
-          std::wofstream outfile(dest.c_str());
+          std::ofstream outfile(dest.c_str());
 
-          std::wstring data;
+          std::string data;
 
           while(std::getline(infile, data)){
             outfile << data;
-            std::wcout << data << "\n";
+            std::cout << data << "\n";
             outfile.flush();
           }
 
@@ -197,13 +199,13 @@ namespace pincer{
 
       }
 
-      bool startSong(int output_device=-1, float volume=0.2f, int sample_rate=44000, int offset=0, int start_pos=0, wchar_t *filename=NULL, float *original_vol=NULL, HCHANNEL *channel=NULL, bool play_on_start=true){
+      bool startSong(int output_device=-1, float volume=0.2f, int sample_rate=44000, int offset=0, int start_pos=0, char *filename=NULL, float *original_vol=NULL, HCHANNEL *channel=NULL, bool play_on_start=true){
         HSAMPLE hm;
-        std::wcout<< L"filename: " << filename << L"\n";
+        std::wcout<< "filename: " << filename << "\n";
         /*std::wstring shorten = filename;
         std::string s(shorten.begin(), shorten.end());
         std::cout << s << "\n";*/
-        std::wifstream st(filename);
+        std::ifstream st(filename);
         std::cout << "is Open: " << st.is_open() << "\n";
         st.close();
         //HSTREAM stream = BASS_StreamCreateFile(FALSE, "SUI UZI - Imperfect.mp3.mp3", 0, 0, BASS_SAMPLE_MONO);
@@ -346,7 +348,7 @@ namespace pincer{
         std::cout<<"Arguments:\n-o <number> = output device\n-v <number> = volume from 0 to 1\n-s <number> = sample rate\n-off <number> = offset\n--outputs = show all available output devices\n--start <seconds> = position to start at in a file.\n-cp <destination_file>\n--help = show all available arguments";
       }
 
-      void create_write_json(std::wstring playlist_name, std::wstring file){
+      void create_write_json(std::string playlist_name, std::string file){
         std::ifstream ifile;
         std::ofstream ofile;
 
