@@ -216,12 +216,13 @@ int main(int argc, char * argv[]){
 
     if(controls->getLoaded()){type = L"Loaded";}else{type=L"Noload";}
 
-    std::wcout << L"\n" << type << L">"; 
     //std::wcin.ignore();
     //filenames don't support umulauts: äöüß
     try{
-      std::wcin.clear(); 
+      std::wcin.clear();
+      std::wcout << L"\n" << type << L">"; 
       std::getline(std::wcin, command);
+      std::wcin.ignore(); 
       split_str = build->w_split(command, L' ', command.size(), 1);
       stripped_str = build->w_strip(command, command.size());
     }catch(...){
@@ -297,13 +298,14 @@ int main(int argc, char * argv[]){
           if(split_str[1][k] == L'\n' || split_str[1][k] == L'\0'){
             break;
           }
+          std::wcout << split_str[1][k];
           newFile[k] = split_str[1][k];
           //std::wcout << k << ". " << split_str[1][k] << L"\n";
         }
-        std::wcout << newFile << L"\n";
-        continue;
+        std::wcout << "\n" << newFile << L"\n";
+        
         controls->load(newFile, &channel, &original_volume);
-        //delete [] newFile;
+        delete [] newFile;
       }else{build->wprintln(L"No file was entered.");}
     }
     if(split_str[0] == L"unload"){
