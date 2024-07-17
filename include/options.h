@@ -156,7 +156,7 @@ public:
     bool wstrcmp(std::wstring in, std::wstring in2){
         std::wstring strip_in = this->w_strip(in, in.size());
         std::wstring strip_in2 = this->w_strip(in2, in2.size());
-        
+
         if(strip_in.size() != strip_in2.size()){
             return false;
         }
@@ -316,23 +316,39 @@ public:
 class Convertors{
 public:
     std::string u32_to_str(const std::u32string str){
-        std::wstring_convert<std::codecvt_utf8_utf16<char32_t>, char32_t> converter;
-        return converter.to_bytes(str);
+        try{
+            std::wstring_convert<std::codecvt_utf8_utf16<char32_t>, char32_t> converter;
+            return converter.to_bytes(str);
+        }catch(std::range_error &e){
+            return "";
+        }
     }
     
     std::u32string str_to_u32(const std::string str){
-        std::wstring_convert<std::codecvt_utf8_utf16<char32_t>, char32_t> converter;
-        return converter.from_bytes(str);
+        try{
+            std::wstring_convert<std::codecvt_utf8_utf16<char32_t>, char32_t> converter;
+            return converter.from_bytes(str);
+        }catch(std::range_error &e){
+            return NULL;
+        }
     }
 
     std::string u16_to_str(const std::u16string str){
-        std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
-        return converter.to_bytes(str);
+        try{
+            std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
+            return converter.to_bytes(str);
+        }catch(std::range_error &e){
+            return "";
+        }
     }
     
     std::u16string str_to_u16(const std::string str){
-        std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
-        return converter.from_bytes(str);
+        try{
+            std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
+            return converter.from_bytes(str);
+        }catch(std::range_error &e){
+            return NULL;
+        }
     }
 };
 
