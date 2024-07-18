@@ -95,7 +95,7 @@ int main(int argc, char * argv[]){
   bool has_file = false;
   bool copy_enabled = false;
 
-  wchar_t * filename;
+  std::wstring filename;
 
   bool has_run = false;
   
@@ -120,7 +120,7 @@ int main(int argc, char * argv[]){
         }
         has_run = true;
         
-        filename = args[i];
+        filename = std::wstring(args[i]);
         std::wcout << filename << L"\n";
         
         /*std::cout << "Filename: " << filename << "\n";
@@ -188,7 +188,7 @@ int main(int argc, char * argv[]){
     build->wprintln(L"No file selected");
   }else{
     //std::wcout << filename << L"\n";
-    if(!controls->startSong<wchar_t *>(output_device, volume, sample_rate, offset, start_pos, filename, &original_volume, &channel)){
+    if(!controls->startSong<std::wstring>(output_device, volume, sample_rate, offset, start_pos, filename, &original_volume, &channel)){
       build->wprintln(L"Could not read the file. This could be due to the program not being able to read special character files.");
     };
     build->wprintln(L"File Loaded/Playing: " + static_cast<std::wstring>(filename));
@@ -206,8 +206,8 @@ int main(int argc, char * argv[]){
 
   std::wstring type = L"Noload";
   
-  _locale_t things = _get_current_locale();
-  std::wcout << things->mbcinfo << L'\n';
+  //_locale_t things = _get_current_locale();
+  //std::wcout << things->mbcinfo << L'\n';
 
   while(true){
     std::wstring command;
@@ -304,7 +304,7 @@ int main(int argc, char * argv[]){
         }
         std::wcout << "\n" << newFile << L"\n";
         
-        controls->load(newFile, &channel, &original_volume);
+        controls->load(split_str[1], &channel, &original_volume);
         delete [] newFile;
       }else{build->wprintln(L"No file was entered.");}
     }
@@ -335,13 +335,13 @@ int main(int argc, char * argv[]){
       try{
         std::wstring * addition = build->w_split(stripped_str, ' ', stripped_str.size(), 2);
         controls->create_write_json(addition[1], addition[2]);
-        return -1;
+        //return -1;
       }catch(...){
         std::wcout<<L"The format for add is 'add <playlist_name> <file_name>'\n";
       }
     }
     if(split_str[0] == L"playlists"){
-      std::wcout << L"Coming Soon";
+      std::wcout << L"Coming Soon\n";
     }
     if(command == L"help"){
       controls->helper();
@@ -356,7 +356,7 @@ int main(int argc, char * argv[]){
   //system("pause");
   controls->stopSong(original_volume);
 
-  delete build;
+  //delete build;
   //delete controls;
   SetConsoleOutputCP(oldcp);
   return 0;

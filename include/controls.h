@@ -29,22 +29,32 @@ namespace pincer{
       std::string dest_file = "";
       float original_volume;
 
+      std::string to_utf8(std::wstring& wide_string)
+      {
+          static std::wstring_convert<std::codecvt_utf8<wchar_t>> utf8_conv;
+          return utf8_conv.to_bytes(wide_string);
+      }
+
       void read_write_playlist(std::wstring playlist_name, std::wstring file){
         std::ifstream ifile;
         std::ofstream ofile;
         
-        std::wcout << file << L"\n";
+        //std::wcout << "Filename: " << file << L"\n";
         char *buffer = new char[1024];
         DWORD siz = 1024;
 
-        int bufferSize = WideCharToMultiByte(CP_UTF8, 0, playlist_name.c_str(), -1, NULL, 0, NULL, NULL);
+        std::wcout << L"\n";
 
+        int bufferSize = WideCharToMultiByte(CP_UTF8, 0, playlist_name.c_str(), -1, NULL, 0, NULL, NULL);
         WideCharToMultiByte(CP_UTF8, 0, playlist_name.c_str(), -1, buffer, bufferSize, NULL, NULL);
-        std::wcout << buffer << "\n";
-        delete [] buffer;
-        /*static std::wstring_convert< std::codecvt_utf8<wchar_t>, wchar_t > converter;
-        std::string playlist = converter.to_bytes(playlist_name);
-        std::string added_file = converter.to_bytes(file);
+
+        std::string filen = this->to_utf8(file);
+        //std::wcout << "Buffer: " << buffer << "\n";
+        
+        //delete [] buffer;
+        //static std::wstring_convert< std::codecvt_utf8<wchar_t>, wchar_t > converter;
+        //std::string playlist = converter.to_bytes(playlist_name);
+        //std::string added_file = converter.to_bytes(file);
 
         ifile.open("./playlist.json");
         std::string data = "";
@@ -55,12 +65,12 @@ namespace pincer{
         //std::cout << j[playlist] << "\n";
         
         if(playlist_name.size() > 0){
-          if(j[playlist_name] == j["null"]){
-            std::wcout << L"nothing happened cause it doesn't exist\n";
+          if(j[buffer] == j["null"]){
+            std::wcout << L"Playlist doesn't exist, will create it if a file was entered\n\n";
             if(file.size() > 0){
               std::wifstream test1(file.c_str());
               if(test1.is_open()){
-                j[playlist_name] = {file};
+                j[buffer] = {filen};
                 std::wcout << L"Added the Playlist '" << playlist_name << L"', and the file '" << file << L"'\n";
                 ofile.open("./playlist.json");
                 ofile << j;
@@ -69,18 +79,18 @@ namespace pincer{
               }
               test1.close();
             }else{
-              std::wcout << L"No File was entered for this playlist\n";
+              std::wcout << L"No File was entered for this playlist. Cannot create an empty playlist.\n";
             }
             
           }
           else{
-            std::wcout << L"hold up, wait a minute, something ain't right \n";
+            //std::wcout << L"hold up, wait a minute, something ain't right \n";
             
             if(file.size() > 0){
               //check if file already in list
-              for(auto it = j[playlist_name].begin(); it < j[playlist_name].end(); it++){
-                std::wcout << *it << L"\n";
-                if(*it == file){
+              for(auto it = j[buffer].begin(); it < j[buffer].end(); it++){
+                //std::cout << *it << "\n";
+                if(*it == filen){
                   std::wcout << L"That file is already in this playlist\n";
                   return;
                 }
@@ -88,13 +98,13 @@ namespace pincer{
 
               //add file to playlist
               //D:\Downloads\Masayoshi Oishi - Super Adorable Gal ｜ OPテーマ「Hokkaido Gals Are Super Adorable!」.mp3.mp3
-              std::ifstream test1(file);
+              std::wifstream test1(file.c_str());
               if(test1.is_open()){
-                j[playlist_name] = {file};
+                //j[buffer] = {filen};
                 ofile.open("./playlist.json");
+                j[buffer].insert(j[buffer].end(), filen);
                 ofile << j;
 
-                j[playlist_name].insert(j[playlist_name].end(), file);
                 std::wcout << L"Added the file '" << file << L"' to the playlist '" << playlist_name << L"'\n";
               }else{
                 std::wcout << L"Cannot add a file that does not exist.\n";
@@ -114,7 +124,7 @@ namespace pincer{
         //std::wcout << std::setw(2) << j << L"\n";
 
         ifile.close();
-        ofile.close();*/
+        ofile.close();
       }
 
     public:
@@ -135,12 +145,12 @@ namespace pincer{
         L"length = shows the length of the song.\n"; 
       }
 
-      void load(wchar_t *filename, HCHANNEL *channel, float *origin_vol){
+      void load(std::wstring filename, HCHANNEL *channel, float *origin_vol){
         std::wcout << L"Filename Before StartSong: " << filename << L"\n";
         if(this->loaded){
           return;
         }else{
-          this->startSong<wchar_t*>(output_device, volume, sample_rate, offset, start_pos, filename, origin_vol, channel, false);
+          this->startSong<std::wstring>(output_device, volume, sample_rate, offset, start_pos, filename, origin_vol, channel, false);
         }
       }
 
@@ -213,13 +223,13 @@ namespace pincer{
         /*std::wstring shorten = filename;
         std::string s(shorten.begin(), shorten.end());
         std::cout << s << "\n";*/
-        std::ifstream st(filename);
+        std::wifstream st(filename.c_str());
         std::wcout << L"is Open: " << st.is_open() << L"\n";
         st.close();
         //HSTREAM stream = BASS_StreamCreateFile(FALSE, "SUI UZI - Imperfect.mp3.mp3", 0, 0, BASS_SAMPLE_MONO);
         BASS_Init(output_device, sample_rate, BASS_SAMPLE_MONO, 0, NULL);
         *original_vol = BASS_GetVolume();
-        hm = BASS_SampleLoad(FALSE, filename, offset, 0, BASS_SAMPLE_LOOP, BASS_SAMPLE_MONO);
+        hm = BASS_SampleLoad(FALSE, filename.c_str(), offset, 0, BASS_SAMPLE_LOOP, BASS_SAMPLE_MONO);
         std::wcout << L"\nError Code: " << BASS_ErrorGetCode() << L"\n";
         if(BASS_ErrorGetCode() != 0){
           this->loaded = false;
@@ -370,6 +380,16 @@ namespace pincer{
         ofile.close();
 
         this->read_write_playlist(playlist_name, file);
+      }
+
+      //list all playlists currently made
+      void list_playlists(){
+        return;
+      }
+
+      //list all files in a playlist
+      void list_playlists_files(){
+        return;
       }
   };
 };
