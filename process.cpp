@@ -316,7 +316,7 @@ int main(int argc, char * argv[]){
     if(split_str[0] == L"volume"){
       if(split_str[1] != L""){
         try{
-          controls->change_volume(std::stof(split_str[1]));
+          controls->change_volume(std::stof(split_str[1]), channel);
         }catch(...){
           build->wprintln(L"Invalid value entered.");
         }
@@ -341,7 +341,18 @@ int main(int argc, char * argv[]){
       }
     }
     if(split_str[0] == L"playlists"){
-      std::wcout << L"Coming Soon\n";
+      try{
+        if(split_str[1] == L""){
+          controls->list_playlists();
+        }else{
+          std::wcout << split_str[1] << L"\n";
+          controls->list_playlists_files(split_str[1]);
+        }
+      }catch(...){
+        controls->list_playlists();
+      }
+      
+      //std::wcout << L"Coming Soon\n";
     }
     if(command == L"help"){
       controls->helper();

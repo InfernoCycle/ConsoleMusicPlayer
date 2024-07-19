@@ -236,11 +236,17 @@ namespace pincer{
           return false;
         }
         this->loaded = true;
-        BASS_SetVolume(volume);
+        //BASS_SetVolume(volume);
         //HCHANNEL channel = BASS_SampleGetChannel(hm, FALSE);
         *channel = BASS_SampleGetChannel(hm, FALSE);
         BASS_ChannelSetPosition(*channel, BASS_ChannelSeconds2Bytes(*channel, start_pos), BASS_POS_BYTE);
         
+        BASS_ChannelSetAttribute(
+          *channel,
+          BASS_ATTRIB_VOL,
+          volume
+        );
+
         if(play_on_start){
           BASS_ChannelPlay(*channel, FALSE);
         }
@@ -312,12 +318,17 @@ namespace pincer{
         BASS_ChannelPause(channel);
       }
 
-      void change_volume(float volume){
+      void change_volume(float volume, HCHANNEL channel){
         if(volume > 100){
           volume = 100;
         }
 
-        BASS_SetVolume(volume/100);
+        BASS_ChannelSetAttribute(
+            channel,
+            BASS_ATTRIB_VOL,
+            volume/100
+        );
+        //BASS_SetVolume(volume/100);
       }
 
       float change_position(HCHANNEL channel, int pos){
@@ -358,7 +369,7 @@ namespace pincer{
         this->loaded = false;
         BASS_Stop();
         sleep(1);
-        BASS_SetVolume(original_volume); //set original volume back
+        //BASS_SetVolume(original_volume); //set original volume back
         BASS_Free();
       }
 
@@ -384,12 +395,87 @@ namespace pincer{
 
       //list all playlists currently made
       void list_playlists(){
+        std::ifstream infile("./playlist.json");
+        if(!infile.is_open()){
+          std::wcout << "File Doesn't Exist.";
+          return;
+        }
+
+        json j;
+
+        infile >> j;
+
+        int count = 1;
+        
+        std::wcout << L"\n";
+
+        for(auto it = j.begin(); it != j.end(); it++){
+          std::wstring like(it.key().begin(), it.key().end());
+          if(like != L"null"){
+            std::wcout << count << L"." << like << L"\n";
+            count+=1;
+          }
+        }
+
+        /*std::string obj = j.dump();
+        std::wstring full_obj(obj.begin(), obj.end());
+        std::wcout << full_obj << L"\n";*/
+
+        infile.close();
         return;
       }
 
       //list all files in a playlist
-      void list_playlists_files(){
-        return;
+      void list_playlists_files(std::wstring playlist){
+        std::ifstream infile("./playlist.json");
+        if(!infile.is_open()){
+          std::wcout << "File Doesn't Exist.";
+          return;
+        }
+        
+        json j;
+        infile >> j;
+
+        char *buffer = new char[1024];
+
+        int bufferSize = WideCharToMultiByte(CP_UTF8, 0, playlist.c_str(), -1, NULL, 0, NULL, NULL); // get size of buffer for playlist
+        WideCharToMultiByte(CP_UTF8, 0, playlist.c_str(), -1, buffer, bufferSize, NULL, NULL); //convert wstring to string by putting in buffer variable (char array)
+
+        std::string convertor(buffer);
+        std::wstring convertor2(convertor.begin(), convertor.end());
+        //return;
+
+        json list = j[buffer];
+
+        std::wcout << convertor2 << L", ff\n";
+        
+        int count = 1;
+
+        std::basic_regex<wchar_t> word_regex(L".+\\.(mp3|wav|mpe4)$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+        std::wsmatch m;
+        for(auto it : list){
+          std::string str = it.dump();
+          std::wstring wstr(str.begin(), str.end());
+          try{
+            wstr.erase(0,1);
+            wstr.erase(wstr.end()-1);
+          }catch(...){
+            continue;
+          }
+          
+          if(std::regex_match(wstr, m, word_regex)){
+            //std::wstring hold = m[0];
+            std::wssub_match base = m[0];
+            std::wstring stt(base.str().begin(), base.str().end());
+            std::wcout << count << ". " << stt << L"\n\n";
+            count+=1;
+          }
+          //std::wcout << count << " P . " << std::regex_match(wstr, m, word_regex) << ", " << wstr << L"\n\n";
+        }
+
+        infile.close();
+        delete [] buffer;
       }
   };
 };
