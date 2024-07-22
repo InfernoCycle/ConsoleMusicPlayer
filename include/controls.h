@@ -14,6 +14,7 @@
 #include "listener.h"
 #include <sstream>
 #include "nlohmann/json.hpp"
+#include <vector>
 
 using json = nlohmann::json;
 
@@ -426,13 +427,15 @@ namespace pincer{
       }
 
       //list all files in a playlist
-      void list_playlists_files(std::wstring playlist){
+      void list_playlists_files(std::wstring playlist, StringMan *build){
         std::ifstream infile("./playlist.json");
         if(!infile.is_open()){
           std::wcout << "File Doesn't Exist.";
           return;
         }
         
+        std::vector<std::wstring> names;
+
         json j;
         infile >> j;
 
@@ -446,8 +449,6 @@ namespace pincer{
         //return;
 
         json list = j[buffer];
-
-        std::wcout << convertor2 << L", ff\n";
         
         int count = 1;
 
@@ -466,10 +467,110 @@ namespace pincer{
           
           if(std::regex_match(wstr, m, word_regex)){
             //std::wstring hold = m[0];
-            std::wssub_match base = m[0];
-            std::wstring stt(base.str().begin(), base.str().end());
-            std::wcout << count << ". " << stt << L"\n\n";
+            /*std::wssub_match base = m[0];
+            std::wstring stt(base.str().begin(), base.str().end());*/
+           // std::wregex file_ex(L"[^\\ \\.\\/]+.+\\.(mp3|wav|mpe4)$");
+
+            //static std::wstring_convert<std::codecvt_utf8<wchar_t>> convertor3;
+            //std::wstring file_wide = convertor3.from_bytes(m[0].str());
+
+            //std::regex_search(wstr, m, file_ex);
+            const wchar_t *pound = L"\\/";
+            std::wstring * thing = build->w_split2(wstr, pound, wstr.size(), wstr.size());
+            int length = thing->size() * sizeof(wchar_t);
+
+            //std::wcout << "Length:  " << length << L"\n";
+
+            for(int p = 0; p < length; p++){
+              if(thing[p] == L""){
+                std::wcout << count << ". " << thing[p-1] << "\n\n";
+                break;
+              }else if(p == length-1 && thing[p] != L""){
+                std::wcout << count << ". " << thing[p-1] << "\n\n";
+                break;
+              }
+            }
+
             count+=1;
+
+            delete [] thing;
+            //delete [] file_buffer;
+          }
+          //std::wcout << count << " P . " << std::regex_match(wstr, m, word_regex) << ", " << wstr << L"\n\n";
+        }
+
+        infile.close();
+        delete [] buffer;
+      }
+
+      void list_playlists_files_v2(std::wstring playlist, StringMan *build){
+        std::ifstream infile("./playlist.json");
+        if(!infile.is_open()){
+          std::wcout << "File Doesn't Exist.";
+          return;
+        }
+        
+        std::vector<std::wstring> names;
+
+        json j;
+        infile >> j;
+
+        char *buffer = new char[1024];
+
+        int bufferSize = WideCharToMultiByte(CP_UTF8, 0, playlist.c_str(), -1, NULL, 0, NULL, NULL); // get size of buffer for playlist
+        WideCharToMultiByte(CP_UTF8, 0, playlist.c_str(), -1, buffer, bufferSize, NULL, NULL); //convert wstring to string by putting in buffer variable (char array)
+
+        std::string convertor(buffer);
+        std::wstring convertor2(convertor.begin(), convertor.end());
+        //return;
+
+        json list = j[buffer];
+        
+        int count = 1;
+
+        std::basic_regex<wchar_t> word_regex(L".+\\.(mp3|wav|mpe4)$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+        std::wsmatch m;
+        for(auto it : list){
+          std::string str = it.dump();
+          std::wstring wstr(str.begin(), str.end());
+          try{
+            wstr.erase(0,1);
+            wstr.erase(wstr.end()-1);
+          }catch(...){
+            continue;
+          }
+          
+          if(std::regex_match(wstr, m, word_regex)){
+            //std::wstring hold = m[0];
+            /*std::wssub_match base = m[0];
+            std::wstring stt(base.str().begin(), base.str().end());*/
+           // std::wregex file_ex(L"[^\\ \\.\\/]+.+\\.(mp3|wav|mpe4)$");
+
+            //static std::wstring_convert<std::codecvt_utf8<wchar_t>> convertor3;
+            //std::wstring file_wide = convertor3.from_bytes(m[0].str());
+
+            //std::regex_search(wstr, m, file_ex);
+            const wchar_t *pound = L"\\/";
+            std::wstring * thing = build->w_split2(wstr, pound, wstr.size(), wstr.size());
+            int length = thing->size() * sizeof(wchar_t);
+
+            //std::wcout << "Length:  " << length << L"\n";
+
+            for(int p = 0; p < length; p++){
+              if(thing[p] == L""){
+                std::wcout << count << ". " << thing[p-1] << "\n\n";
+                break;
+              }else if(p == length-1 && thing[p] != L""){
+                std::wcout << count << ". " << thing[p-1] << "\n\n";
+                break;
+              }
+            }
+
+            count+=1;
+
+            delete [] thing;
+            //delete [] file_buffer;
           }
           //std::wcout << count << " P . " << std::regex_match(wstr, m, word_regex) << ", " << wstr << L"\n\n";
         }

@@ -153,6 +153,77 @@ public:
         return all;
     }
 
+    std::string replace(std::string str, int length, char rep, char rep2){
+        for(int i = 0; i < length; i++){
+            if((*str)[i] == rep){
+                if(rep2 == '\0'){
+                    (*str)[i] = ' ';
+                }else{
+                    (*str)[i] = rep2;
+                }
+            }
+        }
+        return this->strip(str, length);
+    }
+
+    std::wstring w_replace(std::wstring str, int length, wchar_t rep, wchar_t rep2){
+        for(int i = 0; i < length; i++){
+            if((*str)[i] == rep){
+                if(rep2 == '\0'){
+                    (*str)[i] = ' ';
+                }else{
+                    (*str)[i] = rep2;
+                }
+            }
+        }
+        return this->w_strip(str, length);
+    }
+
+    std::wstring* w_split2(std::wstring str, const wchar_t *delimiters, const int length, const int limit=2){
+        std::wstring *all = new std::wstring[limit+1];
+        LinkedList *left = new LinkedList();
+ 
+        int count = 0;
+
+        bool skip = false;
+        outter:for(int i = 0; i < length; i++){
+            for(int k = 0; k < wcslen(delimiters); k++){
+                if((str)[i] == delimiters[k] && count < limit){
+                    if(left->w_to_string() == L""){
+                        left->clear();
+                        skip = true;
+                        continue;
+                    }
+                    all[count] = left->w_to_string();
+                    left->clear();
+                    count++;
+                    skip = true;
+                    //continue;
+                }
+            }
+            if(skip){
+                skip = false;
+                continue;
+            } 
+            /*if((str)[i] == delimiter && count < limit){
+                all[count] = left->w_to_string();
+                left->clear();
+                count++;
+                continue;
+            }*/
+
+            left->w_add((str)[i]);
+            
+            if(i == length-1){
+                all[count] = left->w_to_string();
+                left->clear();
+            }
+        }
+        left->clear();
+        delete left;
+        return all;
+    }
+
     bool wstrcmp(std::wstring in, std::wstring in2){
         std::wstring strip_in = this->w_strip(in, in.size());
         std::wstring strip_in2 = this->w_strip(in2, in2.size());

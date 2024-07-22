@@ -222,7 +222,7 @@ int main(int argc, char * argv[]){
       std::wcin.clear();
       std::wcout << L"\n" << type << L">"; 
       std::getline(std::wcin, command);
-      std::wcin.ignore(); 
+      std::wcin.ignore(0, L'\n');
       split_str = build->w_split(command, L' ', command.size(), 1);
       stripped_str = build->w_strip(command, command.size());
     }catch(...){
@@ -345,11 +345,12 @@ int main(int argc, char * argv[]){
         if(split_str[1] == L""){
           controls->list_playlists();
         }else{
-          std::wcout << split_str[1] << L"\n";
-          controls->list_playlists_files(split_str[1]);
+          //std::wcout << split_str[1] << L"\n";
+          controls->list_playlists_files(split_str[1], build);
         }
-      }catch(...){
-        controls->list_playlists();
+      }catch(std::regex_error e){
+        //controls->list_playlists();
+        std::wcout << e.what();
       }
       
       //std::wcout << L"Coming Soon\n";
