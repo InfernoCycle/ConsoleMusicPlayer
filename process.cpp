@@ -14,10 +14,160 @@
 #include <filesystem>
 #include <io.h>
 #include <fcntl.h>
+#include <thread>
 
 #define UNICODE
 #define BUFFER 2024
 
+struct playlist_funcs{
+  bool playlist_loaded;
+  bool next_requested;
+  bool prev_requested;
+  bool exit_playlist;
+  std::string playlist_name;
+};
+
+struct user_settings{
+  int output_device;
+  float volume;
+  int sample_rate;
+  int offset;
+  int start_pos;
+};
+
+class Listener{
+  public:
+    void running(HCHANNEL *channel, std::vector<std::wstring> playlist, pincer::control *controls, playlist_funcs *obj, int song_start=0){
+      bool play_trap = false;
+      bool pause_trap = false;
+      bool load_trap = false;
+      bool skip_trap = false;
+
+      /*std::wcout << L"\n" << (controls)->getLoaded() << L"\n";*/
+
+      /*       
+      std::wstring delims = L"\\/";
+      for(auto it = playlists.begin(); it < playlists.end(); it++){
+        std::wifstream iis((*it).c_str());
+        std::wcout << iis.is_open() << L"\n";
+        iis.close();
+        //std::wcout << build->w_deldup(*it, (*it).size(), true, delims) << L"\n";
+      }
+      */
+      //auto it = playlist.begin();
+
+      int index = song_start;
+      
+      if(index < playlist.size()){
+        controls->load(playlist[index], channel);
+      }else{
+        controls->load(playlist[0], channel);
+      }
+
+      DWORD active = BASS_ChannelIsActive(*channel);
+      controls->playSong(*channel);
+
+      obj->exit_playlist = false;
+      obj->next_requested = false;
+      obj->prev_requested = false;
+
+      while(true){
+        active = BASS_ChannelIsActive(*channel); //required to be in here, for updates
+        if(obj->playlist_loaded){
+          if(!load_trap){
+            load_trap = true;
+            std::wcout << "A Playlist is already running";
+            continue;
+          }
+        }
+        if(obj->exit_playlist){
+          controls->stopSong();
+          break;
+        }
+
+        if(obj->prev_requested){
+          obj->prev_requested = false;
+
+          index-=1;
+          if(index > -1){
+            controls->unload();
+            controls->load(playlist[index], channel);
+            controls->playSong(*channel);
+          }else{
+            continue;
+            //do something here i guess
+          }
+        }
+
+        //active = BASS_ChannelIsActive(channel);
+        if(active == BASS_ACTIVE_STOPPED || obj->next_requested){
+          index+=1;
+          obj->next_requested = false;
+
+          if(active == BASS_ACTIVE_STOPPED){
+            if(index < playlist.size()){
+              controls->unload();
+              controls->load(playlist[index], channel);
+              controls->playSong(*channel);
+            }/*else{
+              controls->stopSong();
+              index = 0;
+              controls->load(playlist[index], channel);
+              //do something here i guess
+            }*/
+          }
+          else{
+            if(index < playlist.size()){
+              controls->unload();
+              controls->load(playlist[index], channel);
+              controls->playSong(*channel);
+            }else{
+              continue;
+              //do something here i guess
+            }
+          }
+          
+          //std::wcout << L"stopped the play" << L"\n";
+          //break;
+        }
+        /*if(active == BASS_ACTIVE_PLAYING){
+          if(!play_trap){
+            obj->playlist_loaded = true;
+
+            std::wcout << L"is Playing \n";
+            play_trap = true;
+            pause_trap = false;
+          }
+        }
+        if(active == BASS_ACTIVE_PAUSED){
+          if(!pause_trap){
+            std::wcout << L"is Paused\n";
+            pause_trap = true;
+            play_trap = false;
+          }
+        }*/
+      }
+    }
+};
+
+bool playPlaylist(std::wstring playlist_name, HCHANNEL *channel, StringMan *build, pincer::control *controls, playlist_funcs *obj){
+  std::vector<std::wstring> playlists = controls->get_playlists_files(build->w_strip(playlist_name, playlist_name.size()), build);
+  Listener *listen = new Listener();
+  try{
+    std::wcout << playlist_name << L"\n";
+    int cliff = 123;
+    if(playlists.size() == 0){
+      std::wcout << L"Not a valid Playlist\n";
+      return false;
+    }
+    std::thread t1([listen, playlists, channel, controls, obj](){listen->running(channel, playlists, controls, obj);});
+    t1.detach();
+    return true;
+  }catch(...){
+    return false;
+  }
+  return false;
+}
 //std::vector<std::wstring> locals;
 
 //#include "include/Create.h"
@@ -28,6 +178,15 @@ int main(int argc, char * argv[]){
   _setmode(_fileno(stdout), _O_WTEXT);
   _setmode(_fileno(stdin), _O_WTEXT);
   UINT oldcp = GetConsoleOutputCP();
+
+  playlist_funcs obj;
+  playlist_funcs * pobj = &obj;
+
+  pobj->exit_playlist = false;
+  pobj->next_requested = false;
+  pobj->playlist_loaded = false;
+  pobj->playlist_name = "";
+  pobj->prev_requested = false;
 
   //SetConsoleOutputCP(CP_UTF8);
   //std::setlocale(LC_ALL, "C.UTF-8");
@@ -80,6 +239,13 @@ int main(int argc, char * argv[]){
       return 0;
     }
   }
+
+  user_settings *presets = new user_settings;
+  presets->offset = 0;
+  presets->output_device = -1;
+  presets->volume = 0.2f;
+  presets->sample_rate = 44100;
+  presets->start_pos = 0;
 
   int output_device = -1;
   float volume = 0.2f;
@@ -135,6 +301,7 @@ int main(int argc, char * argv[]){
       if(build->wstrcmp(args[i], L"-o") == 1){
         //std::cout << "out put value is out?: " << argv[i+1] << "\n";
         try{
+          presets->output_device = std::stoi(args[i+1])-1;
           output_device = std::stoi(args[i+1])-1;
         }catch(...){
           std::wcout << L"Invalid value, using the default output device of -1.\n";
@@ -149,6 +316,7 @@ int main(int argc, char * argv[]){
           if(levels > 1){
             levels = 1.0f;
           }
+          presets->volume = levels;
           volume = levels;
         }catch(...){
           std::wcout << L"Invalid value, using the default of 0.2.\n";
@@ -157,6 +325,7 @@ int main(int argc, char * argv[]){
 
       if(build->wstrcmp(args[i], L"-s") == 1){
         try{
+          presets->sample_rate = std::stoi(args[i+1]);
           sample_rate = std::stoi(args[i+1]);
         }catch(...){
           std::wcout << L"Invalid Sample Rate, using the default value of 44100.\n";
@@ -166,6 +335,7 @@ int main(int argc, char * argv[]){
       if(build->wstrcmp(args[i], L"-off") == 1){
         //std::cout << "offset value is out? " << argv[i] << "\n";
         try{
+          presets->offset = std::stoi(args[i+1]);
           offset = std::stoi(args[i+1]);
         }catch(...){
           std::wcout << L"Offset was invalid using the default value of 0.\n";
@@ -175,8 +345,10 @@ int main(int argc, char * argv[]){
       if(build->wstrcmp(args[i], L"--start") == 1){
         //std::cout << "offset value is out? " << argv[i] << "\n";
         try{
+          presets->start_pos = std::stoi(args[i+1]);
           start_pos = std::stoi(args[i+1]);
         }catch(...){
+          presets->start_pos = 0;
           start_pos = 0;
           std::wcout << L"Invalid Value. File will begin from the beginning.\n";
         }
@@ -235,7 +407,21 @@ int main(int argc, char * argv[]){
     }
     
     if(split_str[0] == L"play"){
-      controls->playSong(channel);
+      try{
+        if(split_str[1] != L""){
+          if(controls->getLoaded()){
+            std::wcout << L"A File is already loaded. Please unload it to use a playlist.\n";
+            //playPlaylist(split_str[1], &channel, build, controls);
+          }else{
+            playPlaylist(split_str[1], &channel, build, controls, pobj);
+          }
+        }else{
+          controls->playSong(channel);
+        }
+      }catch(...){
+        std::wcout << "Problem occurred\n";
+        controls->playSong(channel);
+      }
     }
     if(split_str[0] == L"restart"){
       controls->restart(channel);
@@ -244,13 +430,20 @@ int main(int argc, char * argv[]){
       controls->pauseSong(channel);
     }
     if(split_str[0] == L"stop"){
-      controls->stopSong(original_volume);
+      controls->stopSong();
+      pobj->exit_playlist = true;
     }
     if(split_str[0] == L"forward"){
-      controls->forward(channel);
+      controls->forward(channel, 50);
     }
     if(split_str[0] == L"backward"){
       controls->back(channel);
+    }
+    if(split_str[0] == L"next"){
+      pobj->next_requested = true;
+    }
+    if(split_str[0] == L"prev"){
+      pobj->prev_requested = true;
     }
     if(split_str[0] == L"pos"){
       if(!controls->getLoaded()){
@@ -304,13 +497,13 @@ int main(int argc, char * argv[]){
         }
         std::wcout << "\n" << newFile << L"\n";
         
-        controls->load(split_str[1], &channel, &original_volume);
+        controls->load(split_str[1], &channel);
         delete [] newFile;
       }else{build->wprintln(L"No file was entered.");}
     }
     if(split_str[0] == L"unload"){
       if(controls->getLoaded()){
-        controls->unload(&original_volume);
+        controls->unload();
       }else{build->wprintln(L"No file is currently loaded.");}
     }
     if(split_str[0] == L"volume"){
@@ -366,10 +559,13 @@ int main(int argc, char * argv[]){
   }
   //std::cout << command << "\n";
   //system("pause");
-  controls->stopSong(original_volume);
+  controls->stopSong();
 
   //delete build;
   //delete controls;
+  //delete pobj;
+
   SetConsoleOutputCP(oldcp);
   return 0;
 }
+

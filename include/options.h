@@ -153,13 +153,139 @@ public:
         return all;
     }
 
+    std::string deldup(std::string str, int length, bool specific = false, char ch = ' '){
+        char prev;
+        char cur;
+
+        LinkedList *list = new LinkedList();
+        bool flag = 0;
+
+        if(!specific){
+            if(length>1){
+                for(int i = 1; i < length; i++){
+                    prev = str[i-1];
+                    cur = str[i];
+                    flag = false;
+
+                    if(prev == cur){
+                        str[i-1] = ' ';
+                        flag = true;
+                    }
+                    if(i == length-1){
+                        list->w_add(str[i-1]);
+                        list->add(str[i]);
+                    }else{
+                        if(flag){
+                            continue;
+                        }
+                        list->add(str[i-1]);
+                    }
+                }
+                return list->to_string();
+            }else{
+                return str;
+            }
+        }else{
+            if(length>1){
+                for(int i = 1; i < length; i++){
+                    prev = str[i-1];
+                    cur = str[i];
+                    flag = false;
+                    if(prev == cur && cur == ch){
+                        str[i-1] = ' ';
+                        flag = true;
+                    }
+                    if(i == length-1){
+                        list->add(str[i]);
+                    }else{
+                        if(flag){
+                            continue;
+                        }
+                        list->add(str[i-1]);
+                    }
+                    
+                }
+                return list->to_string();
+            }else{
+                return str;
+            }
+        }
+    }
+
+    std::wstring w_deldup(std::wstring str, int length, bool specific = false, std::wstring ch = L" "){
+        wchar_t prev;
+        wchar_t cur;
+
+        LinkedList *list = new LinkedList();
+        bool flag = 0;
+
+        if(!specific){
+            if(length>1){
+                for(int i = 1; i < length; i++){
+                    prev = str[i-1];
+                    cur = str[i];
+                    flag=false;
+
+                    if(prev == cur){
+                        str[i-1] = L' ';
+                        flag=true;
+                    }
+                    if(i == length-1){
+                        list->w_add(str[i-1]);
+                        list->w_add(str[i]);
+                    }else{
+                        if(flag){
+                            continue;
+                        }
+                        list->w_add(str[i-1]);
+                    }
+                }
+                return list->w_to_string();
+            }else{
+                return str;
+            }
+        }else{
+            if(length>1){
+                for(int i = 1; i < length; i++){
+                    prev = str[i-1];
+                    cur = str[i];
+                    flag = false;
+                    if(prev == cur){
+                        for(int k = 0; k < ch.size(); k++){
+                            if(cur == ch[k]){
+                                flag=true;
+                                str[i-1] = L' ';
+                                break;
+                            }
+                        }
+                        //str[i-1] = L' ';
+                        //flag=true;
+                    }
+                    if(i == length-1){
+                        list->w_add(str[i-1]);
+                        list->w_add(str[i]);
+                    }else{
+                        if(flag){
+                            continue;
+                        }
+                        list->w_add(str[i-1]);
+                    }
+                    
+                }
+                return list->w_to_string();
+            }else{
+                return str;
+            }
+        }
+    }
+
     std::string replace(std::string str, int length, char rep, char rep2){
         for(int i = 0; i < length; i++){
-            if((*str)[i] == rep){
+            if(str[i] == rep){
                 if(rep2 == '\0'){
-                    (*str)[i] = ' ';
+                    str[i] = ' ';
                 }else{
-                    (*str)[i] = rep2;
+                    str[i] = rep2;
                 }
             }
         }
@@ -168,11 +294,11 @@ public:
 
     std::wstring w_replace(std::wstring str, int length, wchar_t rep, wchar_t rep2){
         for(int i = 0; i < length; i++){
-            if((*str)[i] == rep){
+            if(str[i] == rep){
                 if(rep2 == '\0'){
-                    (*str)[i] = ' ';
+                    str[i] = ' ';
                 }else{
-                    (*str)[i] = rep2;
+                    str[i] = rep2;
                 }
             }
         }
