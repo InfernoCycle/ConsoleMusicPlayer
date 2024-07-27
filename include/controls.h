@@ -11,7 +11,6 @@
 #include <unistd.h>
 #include <thread>
 #include <mutex>
-#include "listener.h"
 #include <sstream>
 #include "nlohmann/json.hpp"
 #include <vector>
@@ -146,18 +145,18 @@ namespace pincer{
         L"length = shows the length of the song.\n"; 
       }
 
-      void load(std::wstring filename, HCHANNEL *channel, float *origin_vol){
+      void load(std::wstring filename, HCHANNEL *channel){
         std::wcout << L"Filename Before StartSong: " << filename << L"\n";
         if(this->loaded){
           return;
         }else{
-          this->startSong<std::wstring>(output_device, volume, sample_rate, offset, start_pos, filename, origin_vol, channel, false);
+          this->startSong<std::wstring>(output_device, volume, sample_rate, offset, start_pos, filename, NULL, channel, false);
         }
       }
 
-      void unload(float *origin_vol){
+      void unload(){
         if(this->loaded){
-          this->stopSong(*origin_vol);
+          this->stopSong();
         }
       }
 
@@ -229,7 +228,7 @@ namespace pincer{
         st.close();
         //HSTREAM stream = BASS_StreamCreateFile(FALSE, "SUI UZI - Imperfect.mp3.mp3", 0, 0, BASS_SAMPLE_MONO);
         BASS_Init(output_device, sample_rate, BASS_SAMPLE_MONO, 0, NULL);
-        *original_vol = BASS_GetVolume();
+        //*original_vol = BASS_GetVolume();
         hm = BASS_SampleLoad(FALSE, filename.c_str(), offset, 0, BASS_SAMPLE_LOOP, BASS_SAMPLE_MONO);
         std::wcout << L"\nError Code: " << BASS_ErrorGetCode() << L"\n";
         if(BASS_ErrorGetCode() != 0){
@@ -257,10 +256,6 @@ namespace pincer{
         if(BASS_ErrorGetCode() != 0){
           return false;
         }
-        Listener listen;
-
-        //std::thread t1(&Listener::running, listen, std::move(123));
-        //t1.detach();
 
         //this->t1.join(); call this if you want blocking
 
@@ -298,7 +293,7 @@ namespace pincer{
         std::cout << "cur bytes per seconds: " << bytes_pos_ratio << "\n";
         std::cout << "cur_pos(seconds): " << cur_pos_seconds << "\n";*/
         
-        BASS_ChannelSetPosition(channel, BASS_ChannelSeconds2Bytes(channel, cur_pos_seconds+5), BASS_POS_BYTE);
+        BASS_ChannelSetPosition(channel, BASS_ChannelSeconds2Bytes(channel, cur_pos_seconds+changeAmount), BASS_POS_BYTE);
       }
 
       void back(HCHANNEL channel, int changeAmount = 5){
@@ -308,7 +303,7 @@ namespace pincer{
         float cur_pos_bytes = bytes_pos_ratio*playback_length_bytes;
 
         float cur_pos_seconds = BASS_ChannelBytes2Seconds(channel, cur_pos_bytes);
-        BASS_ChannelSetPosition(channel, BASS_ChannelSeconds2Bytes(channel, cur_pos_seconds-5), BASS_POS_BYTE);
+        BASS_ChannelSetPosition(channel, BASS_ChannelSeconds2Bytes(channel, cur_pos_seconds-changeAmount), BASS_POS_BYTE);
       }
 
       void playSong(HCHANNEL channel){
@@ -323,6 +318,7 @@ namespace pincer{
         if(volume > 100){
           volume = 100;
         }
+        this->volume = volume;
 
         BASS_ChannelSetAttribute(
             channel,
@@ -336,6 +332,35 @@ namespace pincer{
         float cur_pos_bytes = BASS_ChannelGetPosition(channel, BASS_POS_BYTE);
         float cur_pos = BASS_ChannelBytes2Seconds(channel, cur_pos_bytes);
         return cur_pos;
+      }
+
+      std::wstring get_position(HCHANNEL channel){
+        float cur_pos_bytes = BASS_ChannelGetPosition(channel, BASS_POS_BYTE);
+        float cur_pos_seconds = BASS_ChannelBytes2Seconds(channel, cur_pos_bytes);
+
+        int minutes = (static_cast<int>(cur_pos_seconds)/60);
+        int seconds = static_cast<int>(cur_pos_seconds) % 60;
+        
+        float length_bytes = BASS_ChannelGetLength(channel, BASS_POS_BYTE);
+        float length_seconds = BASS_ChannelBytes2Seconds(channel, length_bytes);
+
+        int minutes_full = (static_cast<int>(length_seconds)/60);
+        int seconds_full = static_cast<int>(length_seconds) % 60;
+
+        if(std::to_string(seconds).length() > 1){
+          if(std::to_string(seconds_full).length() > 1){
+            return L"Time: " + std::to_wstring(minutes) + L":" + std::to_wstring(seconds) + L" / " + std::to_wstring(minutes_full) + L":" + std::to_wstring(seconds_full) + L"\n";
+          }else{
+            return L"Time: " + std::to_wstring(minutes) + L":" + std::to_wstring(seconds) + L" / " + std::to_wstring(minutes_full) + L":0" + std::to_wstring(seconds_full) + L"\n";
+          }
+        }else{
+          if(std::to_string(seconds_full).length() > 1){
+            return L"Time: " + std::to_wstring(minutes) + L":0" + std::to_wstring(seconds) + L" / " + std::to_wstring(minutes_full) + L":" + std::to_wstring(seconds_full) + L"\n";
+          }else{
+            return L"Time: " + std::to_wstring(minutes) + L":0" + std::to_wstring(seconds) + L" / " + std::to_wstring(minutes_full) + L":0" + std::to_wstring(seconds_full) + L"\n";
+          }
+        }
+      
       }
 
       void position(HCHANNEL channel){
@@ -366,7 +391,7 @@ namespace pincer{
         }
       }
 
-      void stopSong(float original_volume){
+      void stopSong(){
         this->loaded = false;
         BASS_Stop();
         sleep(1);
@@ -398,7 +423,7 @@ namespace pincer{
       void list_playlists(){
         std::ifstream infile("./playlist.json");
         if(!infile.is_open()){
-          std::wcout << "File Doesn't Exist.";
+          std::wcout << "File Doesn't Exist. Code: 0\n";
           return;
         }
 
@@ -430,7 +455,7 @@ namespace pincer{
       void list_playlists_files(std::wstring playlist, StringMan *build){
         std::ifstream infile("./playlist.json");
         if(!infile.is_open()){
-          std::wcout << "File Doesn't Exist.";
+          std::wcout << "File Doesn't Exist. Code: 10\n";
           return;
         }
         
@@ -503,11 +528,11 @@ namespace pincer{
         delete [] buffer;
       }
 
-      void list_playlists_files_v2(std::wstring playlist, StringMan *build){
+      std::vector<std::wstring> get_playlists_files(std::wstring playlist, StringMan *build){
         std::ifstream infile("./playlist.json");
         if(!infile.is_open()){
-          std::wcout << "File Doesn't Exist.";
-          return;
+          std::wcout << "File Doesn't Exist. Code: 20\n";
+          return std::vector<std::wstring>();
         }
         
         std::vector<std::wstring> names;
@@ -523,7 +548,7 @@ namespace pincer{
         std::string convertor(buffer);
         std::wstring convertor2(convertor.begin(), convertor.end());
         //return;
-
+        
         json list = j[buffer];
         
         int count = 1;
@@ -532,8 +557,9 @@ namespace pincer{
 
         std::wsmatch m;
         for(auto it : list){
-          std::string str = it.dump();
-          std::wstring wstr(str.begin(), str.end());
+          std::wstring_convert<std::codecvt_utf8<wchar_t>> conver;
+         
+          std::wstring wstr = conver.from_bytes(it.dump());
           try{
             wstr.erase(0,1);
             wstr.erase(wstr.end()-1);
@@ -542,41 +568,18 @@ namespace pincer{
           }
           
           if(std::regex_match(wstr, m, word_regex)){
-            //std::wstring hold = m[0];
-            /*std::wssub_match base = m[0];
-            std::wstring stt(base.str().begin(), base.str().end());*/
-           // std::wregex file_ex(L"[^\\ \\.\\/]+.+\\.(mp3|wav|mpe4)$");
-
-            //static std::wstring_convert<std::codecvt_utf8<wchar_t>> convertor3;
-            //std::wstring file_wide = convertor3.from_bytes(m[0].str());
-
-            //std::regex_search(wstr, m, file_ex);
-            const wchar_t *pound = L"\\/";
-            std::wstring * thing = build->w_split2(wstr, pound, wstr.size(), wstr.size());
-            int length = thing->size() * sizeof(wchar_t);
-
-            //std::wcout << "Length:  " << length << L"\n";
-
-            for(int p = 0; p < length; p++){
-              if(thing[p] == L""){
-                std::wcout << count << ". " << thing[p-1] << "\n\n";
-                break;
-              }else if(p == length-1 && thing[p] != L""){
-                std::wcout << count << ". " << thing[p-1] << "\n\n";
-                break;
-              }
-            }
-
-            count+=1;
-
-            delete [] thing;
-            //delete [] file_buffer;
+            
+            names.push_back(wstr);
+            //std::wcout << wstr << L"\n";
+            
           }
           //std::wcout << count << " P . " << std::regex_match(wstr, m, word_regex) << ", " << wstr << L"\n\n";
         }
 
         infile.close();
         delete [] buffer;
+
+        return names;
       }
   };
 };
