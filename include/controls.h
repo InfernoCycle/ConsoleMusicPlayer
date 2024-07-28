@@ -318,7 +318,7 @@ namespace pincer{
         if(volume > 100){
           volume = 100;
         }
-        this->volume = volume;
+        this->volume = volume/100;
 
         BASS_ChannelSetAttribute(
             channel,

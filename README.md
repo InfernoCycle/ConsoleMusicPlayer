@@ -34,10 +34,10 @@ Commands Include:
 12. `help - shows all available commands and what they do.`
 13. `exit - exits the program`
 > [!NOTE]
-> Changing the volume also changes the whole system volume. Please stop or unload the song before using any other media that requires volume.
+> Behavior of the app may vary by the OS used. Also, output has been known to display duplicates in Windows 8.1
 
 >[!WARNING]
-> Please use Ctrl+Z or Ctrl+C to exit the program and not the 'exit' command as that will lead to a crash of the program.
+> Please Beware of any sudden volume changes when changing songs.
 
 ## Program in Use
 ```
