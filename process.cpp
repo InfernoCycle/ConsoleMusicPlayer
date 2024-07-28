@@ -538,12 +538,21 @@ int main(int argc, char * argv[]){
         if(split_str[1] == L""){
           controls->list_playlists();
         }else{
+			std::wstring *choices = build->w_split(split_str[1], ' ', split_str[1].size(), 3);
+			if(choices[0] == L"remove"){
+				try{
+					controls->remove_playlist_file(choices[1], choices[2], build);
+				}catch(...){
+					continue;
+				}
+			}
           //std::wcout << split_str[1] << L"\n";
           controls->list_playlists_files(split_str[1], build);
         }
       }catch(std::regex_error e){
         //controls->list_playlists();
         std::wcout << e.what();
+		continue;
       }
       
       //std::wcout << L"Coming Soon\n";

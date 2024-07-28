@@ -31,8 +31,10 @@ Commands Include:
 9. `unload - does the same thing that the 'stop' command does.`
 10. `pos - shows the current position a song is at.`
 11. `length <secs | mins> - shows the length of a song in minutes or seconds (default).`
-12. `help - shows all available commands and what they do.`
-13. `exit - exits the program`
+12. `playlists <playlist_name:optional> - lists all playlists available and files in that playlist.`
+13. `add <playlist_name> <filename> - adds a file to the specified playlist.`
+14. `help - shows all available commands and what they do.`
+15. `exit - exits the program`
 > [!NOTE]
 > Behavior of the app may vary by the OS used. Also, output has been known to display duplicates in Windows 8.1
 

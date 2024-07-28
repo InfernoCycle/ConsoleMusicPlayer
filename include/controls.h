@@ -489,7 +489,7 @@ namespace pincer{
           }catch(...){
             continue;
           }
-          
+
           if(std::regex_match(wstr, m, word_regex)){
             //std::wstring hold = m[0];
             /*std::wssub_match base = m[0];
@@ -505,16 +505,32 @@ namespace pincer{
             int length = thing->size() * sizeof(wchar_t);
 
             //std::wcout << "Length:  " << length << L"\n";
-
-            for(int p = 0; p < length; p++){
-              if(thing[p] == L""){
+			
+			//std::wcout << thing[0] << L"\n";
+			
+			std::wcout << count << ". ";
+			
+            for(int p = 0; p < wstr.size(); p++){
+			  std::wcout << thing[p];
+			  if(thing[p] == L"\0"){
+				  //std::wcout << L"Pull em out\n";
+				  break;
+			  }
+			  
+			  if(thing[p+1] == L"\0"){
+				  continue;
+			  }else{
+				  std::wcout << "/";
+			  }
+              /*if(thing[p] == L""){
                 std::wcout << count << ". " << thing[p-1] << "\n\n";
-                break;
+                //break;
               }else if(p == length-1 && thing[p] != L""){
                 std::wcout << count << ". " << thing[p-1] << "\n\n";
-                break;
-              }
+                //break;
+              }*/
             }
+			std::wcout << "\n\n";
 
             count+=1;
 
@@ -581,6 +597,21 @@ namespace pincer{
 
         return names;
       }
+	  void remove_playlist_file(std::wstring playlist, std::wstring file, StringMan *build){
+		 //std::wcout << L"Playlist: " << playlist << L",  File Num: " << file << L"\n";
+		 //return;
+		 std::vector<std::wstring> files = this->get_playlists_files(playlist, build);
+		 
+		 auto it = files.begin();
+		 
+		 int count = 0;
+		 for(it; it < files.end(); it++){
+			 if(std::to_wstring(count+1) == file){
+				 std::wcout << *it << L"\n\n";
+			 }
+			 count+=1;
+		 }
+	  }
   };
 };
 
