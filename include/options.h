@@ -494,16 +494,15 @@ public:
     std::string wstrtostr(const std::wstring &wstr)
     {
         // Convert a utf-16 to utf-8. all characters on windows are utf-16
-        std::u16string u16str(wstr.begin(), wstr.end());
-        std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert; 
-        std::string utf8 = convert.to_bytes(u16str);
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> convert; 
+        std::string utf8 = convert.to_bytes(wstr);
         return utf8;
     }
 
     std::wstring strtowstr(const std::string str)
     {
         // Convert an ASCII string to a Unicode String
-        std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> convert; 
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> convert; 
         std::wstring utf8 = convert.from_bytes(str);
         //std::wstring wstr(utf16.begin(), utf16.end());
         return utf8;
@@ -546,6 +545,23 @@ public:
         }catch(std::range_error &e){
             return NULL;
         }
+    }
+
+    std::string wstr_to_str(const std::wstring &wstr)
+    {
+        // Convert a utf-16 to utf-8. all characters on windows are utf-16
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> convert; 
+        std::string utf8 = convert.to_bytes(wstr);
+        return utf8;
+    }
+
+    std::wstring str_to_wstr(const std::string str)
+    {
+        // Convert an ASCII string to a Unicode String
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> convert; 
+        std::wstring utf8 = convert.from_bytes(str);
+        //std::wstring wstr(utf16.begin(), utf16.end());
+        return utf8;
     }
 };
 

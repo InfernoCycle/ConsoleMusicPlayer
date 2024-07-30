@@ -14,6 +14,7 @@
 #include <sstream>
 #include "nlohmann/json.hpp"
 #include <vector>
+#include <filesystem>
 
 using json = nlohmann::json;
 
@@ -28,6 +29,16 @@ namespace pincer{
       int start_pos = 0;
       std::string dest_file = "";
       float original_volume;
+
+      std::string playlist_file_sld;
+
+      void repair(){
+        json j;
+
+        std::ofstream outfile(this->playlist_file_sld);
+        outfile << j.dump();
+        outfile.close();
+      }
 
       std::string to_utf8(std::wstring& wide_string)
       {
@@ -56,7 +67,7 @@ namespace pincer{
         //std::string playlist = converter.to_bytes(playlist_name);
         //std::string added_file = converter.to_bytes(file);
 
-        ifile.open("./playlist.json");
+        ifile.open(this->playlist_file_sld);
         std::string data = "";
 
         json j;
@@ -72,7 +83,7 @@ namespace pincer{
               if(test1.is_open()){
                 j[buffer] = {filen};
                 std::wcout << L"Added the Playlist '" << playlist_name << L"', and the file '" << file << L"'\n";
-                ofile.open("./playlist.json");
+                ofile.open(this->playlist_file_sld);
                 ofile << j;
               }else{
                 std::wcout << L"Cannot add a file that does not exist.\n";
@@ -101,7 +112,7 @@ namespace pincer{
               std::wifstream test1(file.c_str());
               if(test1.is_open()){
                 //j[buffer] = {filen};
-                ofile.open("./playlist.json");
+                ofile.open(this->playlist_file_sld);
                 j[buffer].insert(j[buffer].end(), filen);
                 ofile << j;
 
@@ -128,6 +139,10 @@ namespace pincer{
       }
 
     public:
+      control(std::string playlist_file_sld){
+        this->playlist_file_sld = playlist_file_sld;
+      }
+
       void helper(){
         std::wcout << 
         L"play = start current playing song\n" <<
@@ -407,9 +422,9 @@ namespace pincer{
         std::ifstream ifile;
         std::ofstream ofile;
 
-        ifile.open("./playlist.json");
+        ifile.open(this->playlist_file_sld);
         if(!ifile.is_open()){
-          ofile.open("./playlist.json");
+          ofile.open(this->playlist_file_sld);
           ofile << "{}";
         }
 
@@ -421,15 +436,22 @@ namespace pincer{
 
       //list all playlists currently made
       void list_playlists(){
-        std::ifstream infile("./playlist.json");
+        std::ifstream infile(this->playlist_file_sld);
         if(!infile.is_open()){
           std::wcout << "File Doesn't Exist. Code: 0\n";
+          repair();
           return;
         }
 
         json j;
 
-        infile >> j;
+        try{
+          infile >> j;
+        }catch(...){
+          //std::wcout << L"Something went wrong, this file is formatted incorrectly.\n\n";
+          repair();
+          return;
+        }
 
         int count = 1;
         
@@ -453,17 +475,36 @@ namespace pincer{
 
       //list all files in a playlist
       void list_playlists_files(std::wstring playlist, StringMan *build){
-        std::ifstream infile("./playlist.json");
+        std::ifstream infile(this->playlist_file_sld);
         if(!infile.is_open()){
           std::wcout << "File Doesn't Exist. Code: 10\n";
+          repair();
+          return;
+        }
+
+        int fsize = infile.tellg();
+        infile.seekg(0, std::ios::end);
+        fsize = infile.tellg() - fsize;
+        infile.seekg(0);
+
+        if(fsize == 0){
+          //std::wcout << L"Something went wrong this file is empty.\n\n";
+          repair();
           return;
         }
         
         std::vector<std::wstring> names;
 
         json j;
-        infile >> j;
 
+        try{
+          infile >> j;
+        }catch(...){
+          //std::wcout << L"Something went wrong, this file is formatted incorrectly.\n\n";
+          repair();
+          return;
+        }
+      
         char *buffer = new char[1024];
 
         int bufferSize = WideCharToMultiByte(CP_UTF8, 0, playlist.c_str(), -1, NULL, 0, NULL, NULL); // get size of buffer for playlist
@@ -544,17 +585,48 @@ namespace pincer{
         delete [] buffer;
       }
 
-      std::vector<std::wstring> get_playlists_files(std::wstring playlist, StringMan *build){
-        std::ifstream infile("./playlist.json");
+      json get_json(){
+        std::ifstream infile(this->playlist_file_sld);
         if(!infile.is_open()){
           std::wcout << "File Doesn't Exist. Code: 20\n";
+          repair();
           return std::vector<std::wstring>();
         }
         
         std::vector<std::wstring> names;
 
         json j;
-        infile >> j;
+
+        try{
+          infile >> j;
+        }catch(...){
+          //std::wcout << L"Something went wrong, this file is formatted incorrectly.\n\n";
+          repair();
+          return j;
+        }
+
+        return j;
+      }
+
+      std::vector<std::wstring> get_playlists_files(std::wstring playlist, StringMan *build){
+        std::ifstream infile(this->playlist_file_sld);
+        if(!infile.is_open()){
+          std::wcout << "File Doesn't Exist. Code: 20\n";
+          repair();
+          return std::vector<std::wstring>();
+        }
+        
+        std::vector<std::wstring> names;
+
+        json j;
+        
+        try{
+          infile >> j;
+        }catch(...){
+          //std::wcout << L"Something went wrong, this file is formatted incorrectly.\n\n";
+          repair();
+          return std::vector<std::wstring>();
+        }
 
         char *buffer = new char[1024];
 
@@ -600,17 +672,47 @@ namespace pincer{
 	  void remove_playlist_file(std::wstring playlist, std::wstring file, StringMan *build){
 		 //std::wcout << L"Playlist: " << playlist << L",  File Num: " << file << L"\n";
 		 //return;
-		 std::vector<std::wstring> files = this->get_playlists_files(playlist, build);
-		 
-		 auto it = files.begin();
-		 
-		 int count = 0;
-		 for(it; it < files.end(); it++){
-			 if(std::to_wstring(count+1) == file){
-				 std::wcout << *it << L"\n\n";
-			 }
-			 count+=1;
-		 }
+      std::vector<std::wstring> files = this->get_playlists_files(playlist, build);
+      
+      auto it = files.begin();
+      
+      int count = 0;
+    
+      json j = this->get_json();
+
+      char *buffer = new char[1024];
+
+      int bufferSize = WideCharToMultiByte(CP_UTF8, 0, playlist.c_str(), -1, NULL, 0, NULL, NULL); // get size of buffer for playlist
+      WideCharToMultiByte(CP_UTF8, 0, playlist.c_str(), -1, buffer, bufferSize, NULL, NULL); //convert wstring to string by putting in buffer variable (char array)
+
+      json list = j[buffer];
+
+      for(it; it < files.end(); it++){
+        if(std::to_wstring(count+1) == file){
+          //std::wcout << list.is_array() << L"\n\n";
+          if(list.is_array()){
+
+            list.erase(count);
+            j[buffer] = list;
+            std::wcout << L"Removed '" << *it << "' From The Playlist." << L"\n\n";
+            
+            //std::wcout << build->strtowstr(j.dump()) << L"\n\n";
+            std::ofstream outfile(this->playlist_file_sld);
+            
+            if(outfile.is_open()){
+              //int length = outfile.tellp();
+              //outfile.seekp(0); 
+              outfile << j.dump(); //most important line right here.
+              //outfile.clear("");
+            }
+
+            outfile.close();
+            break;
+          }
+          //std::wcout << *it << L"\n\n";
+        }
+        count+=1;
+      }
 	  }
   };
 };

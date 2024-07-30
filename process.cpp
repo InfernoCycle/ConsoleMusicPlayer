@@ -18,6 +18,7 @@
 
 #define UNICODE
 #define BUFFER 2024
+#define FILEPATH "C:\\Users\\"+user_name()+"\\AppData\\Local\\Inferno\\MP3_Console\\playlist.json"
 
 struct playlist_funcs{
   bool playlist_loaded;
@@ -168,6 +169,26 @@ bool playPlaylist(std::wstring playlist_name, HCHANNEL *channel, StringMan *buil
   }
   return false;
 }
+
+std::string user_name()
+{
+  const short maxUserLength = 256;
+  char buffer[maxUserLength+1]{};
+  DWORD len = maxUserLength+1;
+  if( ::GetUserNameA( buffer, &len ) ) return buffer;
+  else return {}; // or: return "" ;
+}
+
+bool create_directory(){
+  try{
+    std::string test = "C:\\Users\\"+user_name()+"\\AppData\\Local\\Inferno\\MP3_Console";
+
+    std::filesystem::create_directories(test);
+    return true;
+  }catch(...){
+    return false;
+  }
+}
 //std::vector<std::wstring> locals;
 
 //#include "include/Create.h"
@@ -188,6 +209,7 @@ int main(int argc, char * argv[]){
   pobj->playlist_name = "";
   pobj->prev_requested = false;
 
+  create_directory();
   //SetConsoleOutputCP(CP_UTF8);
   //std::setlocale(LC_ALL, "C.UTF-8");
   //std::setlocale(LC_ALL, "ja_JP.utf8");
@@ -200,7 +222,7 @@ int main(int argc, char * argv[]){
   //build->println(std::to_string(build->wstrcmp(args[1], L"--help")));
 
   //return -1;
-  pincer::control *controls = new pincer::control();
+  pincer::control *controls = new pincer::control(FILEPATH);
   //std::cout << check_create() << "\n";
   // Read and check command line parameters.
   //std::cout << argc << ", " << strcmp(argv[1], "help") << "\n";
@@ -538,21 +560,21 @@ int main(int argc, char * argv[]){
         if(split_str[1] == L""){
           controls->list_playlists();
         }else{
-			std::wstring *choices = build->w_split(split_str[1], ' ', split_str[1].size(), 3);
-			if(choices[0] == L"remove"){
-				try{
-					controls->remove_playlist_file(choices[1], choices[2], build);
-				}catch(...){
-					continue;
-				}
-			}
+          std::wstring *choices = build->w_split(split_str[1], ' ', split_str[1].size(), 3);
+          if(choices[0] == L"remove"){
+            try{
+              controls->remove_playlist_file(choices[1], choices[2], build);
+            }catch(...){
+              continue;
+            }
+          }
           //std::wcout << split_str[1] << L"\n";
           controls->list_playlists_files(split_str[1], build);
         }
       }catch(std::regex_error e){
         //controls->list_playlists();
         std::wcout << e.what();
-		continue;
+		    continue;
       }
       
       //std::wcout << L"Coming Soon\n";
