@@ -9,7 +9,7 @@ C++ 11 or Up Compiler
 3. [Visual Studio](https://visualstudio.microsoft.com/vs/features/cplusplus/)
 
 # Build
-All the libraries needed are already inside this project. The only thing you need to do is run the "run.bat" file in the command prompt from the same directory as the "process.cpp" file.
+All the libraries needed are already inside this project. The only thing you need to do is run the "run.bat" file in the command prompt from the same directory as the downloaded unzipped file.
 
 # After Build
 A file called "process2.exe" should be built in the same directory. You can then run the file in a command prompt or by running an mp3 file as the argument using theis application.
