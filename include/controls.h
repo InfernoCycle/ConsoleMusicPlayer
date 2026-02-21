@@ -32,7 +32,7 @@ namespace pincer{
 
       std::string playlist_file_sld;
 
-      void repair(){
+      void repair(){ //repairs a bad json configuration file if it was altered badly
         json j;
 
         std::ofstream outfile(this->playlist_file_sld);
@@ -146,18 +146,25 @@ namespace pincer{
       void helper(){
         std::wcout << 
         L"play = start current playing song\n" <<
+        L"play <playlist_name> = starts playing specified playlist\n" <<
         L"stop = stop current playing song. unloads the file that was playing.\n" <<
         L"pause = pauses the currently playing song. using 'play' starts the song at the current song position.\n" <<
         L"restart = restarts the song from the beginning.\n" <<
+        L"playlists = lists all created playlists\n" << 
+        L"playlists <playlist_name> = list all songs in the specified playlist\n" <<
         L"forward = moves the song up 5 seconds.\n" <<
         L"backwards = moves the song back 5 seconds.\n" <<
-        L"volume <0 to 100> = changes the volume of the computer from 0 to 100.\n" <<
+        L"volume <0 to 100> = changes the volume of the application from 0 to 100.\n" <<
         L"unload = unsets the current song so you can load a new one. does the same thing as 'stop'\n" <<
         L"load <filepath> = sets a new file to play. If one is already playing, then it will be unloaded.\n" <<
         L"pos <default 'secs' | 'mins'> = shows current position out of the full length that the song is at.\n" <<
         L"copy <dest_file> = makes a copy of the currently loaded file.\n" <<
         L"loaded = shows the current file loaded.\n" <<
-        L"length = shows the length of the song.\n"; 
+        L"length = shows the length of the song.\n" <<
+	L"playlists <playlist_name:optional> - lists all playlists available and files in that playlist.\n" <<
+	L"add <playlist_name> <filename> - adds a file to the specified playlist.\n" <<
+	L"help - shows all available commands and what they do.\n" <<
+	L"exit - exits the program\n";
       }
 
       void load(std::wstring filename, HCHANNEL *channel){
@@ -177,6 +184,10 @@ namespace pincer{
 
       bool getLoaded(){
         return this->loaded;
+      }
+
+      void getFileLoaded(HCHANNEL channel, std::wstring filename){ //gets the loaded file path
+        std::cout << L"Loaded File: " << filename << L"" << std::endl;
       }
 
       void length(HCHANNEL channel, std::wstring type=L"secs"){
@@ -244,7 +255,7 @@ namespace pincer{
         //HSTREAM stream = BASS_StreamCreateFile(FALSE, "SUI UZI - Imperfect.mp3.mp3", 0, 0, BASS_SAMPLE_MONO);
         BASS_Init(output_device, sample_rate, BASS_SAMPLE_MONO, 0, NULL);
         //*original_vol = BASS_GetVolume();
-        hm = BASS_SampleLoad(FALSE, filename.c_str(), offset, 0, BASS_SAMPLE_LOOP, BASS_SAMPLE_MONO);
+        hm = BASS_SampleLoad(FALSE, filename.c_str(), offset, 0, 1, BASS_SAMPLE_MONO | BASS_UNICODE);
         std::wcout << L"\nError Code: " << BASS_ErrorGetCode() << L"\n";
         if(BASS_ErrorGetCode() != 0){
           this->loaded = false;
